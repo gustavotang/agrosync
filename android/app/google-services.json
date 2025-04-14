@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "603925781655",
+    "firebase_url": "https://agro-oversight-default-rtdb.firebaseio.com",
+    "project_id": "agro-oversight",
+    "storage_bucket": "agro-oversight.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603925781655:android:2d445af0350df0be28ddd2",
+        "android_client_info": {
+          "package_name": "com.agro_management.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUHaM1MpAi2gowHhj5YlM7-3iaCccjMek"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

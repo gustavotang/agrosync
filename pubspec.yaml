@@ -1,0 +1,46 @@
+name: agrosync
+description: A new Flutter project.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+environment:
+  sdk: ">=2.17.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+
+  # Versões antigas do Firebase para compatibilidade com SDK 31
+  # firebase_core: ^2.32.0
+  # firebase_database: ^10.0.0
+  # cloud_firestore: ^4.0.0
+  # firebase_auth: ^4.16.0
+
+  firebase_core: ^3.8.0
+  firebase_database: any
+  cloud_firestore: any
+  firebase_data_connect: any
+  firebase_storage: any
+  provider: ^6.1.2
+  intl: ^0.19.0
+  http: ^1.2.2
+  sqflite: ^2.0.0+4
+  connectivity_plus: any
+  uuid: ^4.5.1
+  hive: any
+  hive_flutter: ^1.1.0
+  fluttertoast: any
+  flutter_masked_text2: any  
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
