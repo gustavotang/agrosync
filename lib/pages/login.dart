@@ -73,6 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
             }),
             const SizedBox(height: 20),
+            _buildSponsors(),
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -81,18 +83,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildLogo() {
   return SizedBox(
-    height: 100,
+    height: 300,
     child: Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Image.network(
-          'https://w7.pngwing.com/pngs/125/1009/png-transparent-brazilian-agricultural-research-corporation-ministry-of-agriculture-cerrado-matopiba-embrapa-agroindustria-tropical-gado-text-trademark-logo.png',
-          height: 50, 
-          fit: BoxFit.contain,
-        ),
-        Image.network(
-          'https://sescongf.com.br/wp-content/uploads/2019/04/Logo-Univali-final.png',
-          height: 50, 
+        Image.asset(
+          'assets/images/agro_sync_verde.png',
+          height: 300, 
           fit: BoxFit.contain,
         ),
       ],
@@ -100,6 +97,26 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 }
 
+Widget _buildSponsors() {
+  return SizedBox(
+    height: 100,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Image.asset(
+          'assets/images/embrapa.png',
+          height: 50, 
+          fit: BoxFit.contain,
+        ),
+        Image.asset(
+          'assets/images/univali.png',
+          height: 50, 
+          fit: BoxFit.contain,
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildTextField({required TextEditingController controller, required String label, required bool obscureText}) {
     return TextField(

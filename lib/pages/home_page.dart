@@ -52,153 +52,165 @@ class HomePage extends StatelessWidget {
 
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFFFFF),
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(33.5, 17.2, 27.7, 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(0, 0, 0, 242.3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 0.4),
-                    width: 54,
-                    height: 21,
-                    child: SizedBox(
-                      width: 28.4,
-                      height: 11.1,
-                      child: SvgPicture.asset(
-                        'assets/vectors/image_6_x2.svg',
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFF4B8B3B), // Fundo verde
+    body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Cabeçalho com informações do usuário
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: const Color(0xFF388E3C), // Verde mais escuro
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 48,
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GUSTAVO',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(0, 0.2, 0, 0),
-                    child: SizedBox(
-                      width: 66.7,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(0, 0.3, 5, 0.3),
-                            child: SizedBox(
-                              width: 17,
-                              height: 10.7,
-                              child: SvgPicture.asset(
-                                'assets/vectors/mobile_signal_5_x2.svg',
-                              ),
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(0, 0, 5, 0.4),
-                            child: SizedBox(
-                              width: 15.3,
-                              height: 11,
-                              child: SvgPicture.asset(
-                                'assets/vectors/wifi_5_x2.svg',
-                              ),
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                            child: SizedBox(
-                              width: 24.3,
-                              height: 11.3,
-                              child: SvgPicture.asset(
-                                'assets/vectors/battery_4_x2.svg',
-                              ),
-                            ),
-                          ),
-                        ],
+                    Text(
+                      'Cargo: Administrador',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-            // Botão "Registrar"
-            ElevatedButton(
-              onPressed: () async {
-                Plant newPlant = Plant(
-                  name: "capim teste",
-                  species: "teste",
-                  date: DateTime.now(),
-                  pasture: "teste",
-                  culture: "teste",
-                  condicaoArea: "Em lavoura",
-                  fresh_weight: 2,
-                  dry_weight: 1.2,
-                  quantity: 1,
-                );
+          ),
+          const SizedBox(height: 24),
 
-                // Adiciona a nova planta ao Firestore
-                //_syncWithFirestore();
+          // Título "Serviços"
+          Text(
+            'Serviços',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
 
-                // Navega para a tela de Fase1, se necessário
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => RegistroPlanta(planta: newPlant)),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF000000),
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // Grid com os botões
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              children: [
+                _buildServiceButton(
+                  icon: Icons.note_add,
+                  label: 'Registrar Planta',
+                  onTap: () {
+                    Plant newPlant = Plant(
+                      name: "capim teste",
+                      species: "teste",
+                      date: DateTime.now(),
+                      pasture: "teste",
+                      culture: "teste",
+                      condicaoArea: "Em lavoura",
+                      fresh_weight: 2,
+                      dry_weight: 1.2,
+                      quantity: 1,
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RegistroPlanta(planta: newPlant),
+                      ),
+                    );
+                  },
                 ),
-              ),
-              child: Text(
-                'Registrar',
-                style: GoogleFonts.getFont(
-                  'Inter',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 18,
-                  height: 1.5,
-                  color: const Color(0xFFFFFFFF),
+                _buildServiceButton(
+                  icon: Icons.search,
+                  label: 'Consultar Planta',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ConsultaTabela(),
+                      ),
+                    );
+                  },
                 ),
-              ),
+                _buildServiceButton(
+                  icon: Icons.person,
+                  label: 'Creditos',
+                  onTap: () {
+                    // Ação para o botão "Creditos"
+                  },
+                ),
+                _buildServiceButton(
+                  icon: Icons.add_location_alt,
+                  label: 'Adicionar Campo',
+                  onTap: () {
+                    // Ação para o botão "Adicionar Campo"
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 30), // Espaço entre os botões
-            // Botão "Consultar"
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ConsultaTabela()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEEEEEE),
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Consultar',
-                style: GoogleFonts.getFont(
-                  'Inter',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 18,
-                  height: 1.5,
-                  color: const Color(0xFF000000),
-                ),
-              ),
-            ),
-            const Spacer(), // Mantém os botões no topo
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+// Função para criar os botões de serviço
+Widget _buildServiceButton({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF66BB6A), // Verde claro
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: Colors.black,
+            size: 48,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 }
