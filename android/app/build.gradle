@@ -6,22 +6,22 @@ plugins {
 }
 
 android {
-    namespace = "com.example.agromanagement"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.example.agrosync"
+    compileSdk = flutter.compileSdkVersion // Corrigido de "ompileSdk" para "compileSdk"
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = "17"
     }
 
     defaultConfig {
-        minSdkVersion 23 
-        applicationId = "com.example.agromanagement"
+        minSdkVersion 23
+        applicationId = "com.example.agrosync"
         //minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

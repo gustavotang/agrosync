@@ -7,8 +7,6 @@ import 'consulta_tabela.dart';
 import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrosync/models/toast.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
-
 
 class RegistroPlanta extends StatefulWidget {
   final Plant planta;
@@ -20,121 +18,139 @@ class RegistroPlanta extends StatefulWidget {
 }
 
 class _RegistroState extends State<RegistroPlanta> {
-  // Controladores com máscara
-  final MaskedTextController _nameController =
-      MaskedTextController(mask: '****************'); // Exemplo: limite de 16 caracteres mascarados
-  final MaskedTextController _cultureController =
-      MaskedTextController(mask: '**********'); // Exemplo: limite de 10 caracteres mascarados
-  final MaskedTextController _speciesController =
-      MaskedTextController(mask: '**************'); // Exemplo: limite de 14 caracteres mascarados
-
-  // Controladores comuns
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _pastureController = TextEditingController();
+  final TextEditingController _speciesController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _conditionController = TextEditingController();
+  final TextEditingController _cultureController = TextEditingController();
   final TextEditingController _freshWeightController = TextEditingController();
   final TextEditingController _dryWeightController = TextEditingController();
 
   var _plantBox = Hive.box('plant_box');
 
-  String? selectedCondition;
-  String? selectedPasture;
-
-  final List<String> pastures = <String>['1', '2', '3', '4'];
-  final List<String> conditions = [
-    'Entre safra',
-    'Na lavoura',
-    'Pré-dessecação',
-    'Na colheita',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _dateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+  }
 
   @override
   Widget build(BuildContext context) {
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          title: Text('Cadastrar Planta', style: GoogleFonts.inter(color: Colors.white)),
-        ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Campo Nome com máscara
-                _buildTextField(
-                  label: 'Nome *',
-                  controller: _nameController,
-                  hint: 'Insira o nome da planta (máx. 16)',
-                  keyboardType: TextInputType.name,
-                  validator: _validateCustomString,
-                ),
-                // Campo Espécie com máscara
-                _buildTextField(
-                  label: 'Espécie *',
-                  controller: _speciesController,
-                  hint: 'Espécie (máx. 14 caracteres)',
-                  keyboardType: TextInputType.text,
-                  validator: _validateCustomString,
-                ),
-                _buildDropdown(
-                  label: 'Pasto *',
-                  items: pastures,
-                  onChanged: (value) => selectedPasture = value,
-                ),
-                // Campo Cultura com máscara
-                _buildTextField(
-                  label: 'Cultura *',
-                  controller: _cultureController,
-                  hint: 'Cultura (máx. 10 caracteres)',
-                  keyboardType: TextInputType.name,
-                  validator: _validateCustomString,
-                ),
-                _buildDropdown(
-                  label: 'Condição da Área *',
-                  items: conditions,
-                  onChanged: (value) => selectedCondition = value,
-                ),
-                _buildTextField(
-                  label: 'Quantidade *',
-                  controller: _quantityController,
-                  hint: 'Quantidade (entre 1 e 100.000)',
-                  keyboardType: TextInputType.number,
-                  validator: _quantityValidator,
-                ),
-                _buildTextField(
-                  label: 'Peso Verde (g)',
-                  controller: _freshWeightController,
-                  hint: 'Peso verde (10 a 1.000.000 g)',
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: _optionalWeightValidator,
-                ),
-                _buildTextField(
-                  label: 'Peso Seco (g)',
-                  controller: _dryWeightController,
-                  hint: 'Peso seco (10 a 1.000.000 g)',
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: _optionalWeightValidator,
-                ),
-                Text(
-                  'Os campos marcados com (*) são obrigatórios.',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red,
+    return Scaffold(
+      backgroundColor: const Color(0xFF4B8B3B),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF388E3C),
+        title: const Text('Registro de planta'),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildTextField(
+                label: 'Data',
+                controller: _dateController,
+                hint: 'DD/MM/AAAA',
+                keyboardType: TextInputType.datetime,
+                validator: _isEmptyValidator,
+              ),
+              _buildTextField(
+                label: 'Pasto',
+                controller: _pastureController,
+                hint: 'Digite o pasto',
+                keyboardType: TextInputType.text,
+                validator: _isEmptyValidator,
+              ),
+              _buildTextField(
+                label: 'Nome da espécie',
+                controller: _speciesController,
+                hint: 'Digite o nome da espécie',
+                keyboardType: TextInputType.text,
+                validator: _validateCustomString,
+              ),
+              _buildTextField(
+                label: 'Quantidade',
+                controller: _quantityController,
+                hint: 'Digite a quantidade',
+                keyboardType: TextInputType.number,
+                validator: _quantityValidator,
+              ),
+              _buildTextField(
+                label: 'Condição do Solo',
+                controller: _conditionController,
+                hint: 'Digite a condição do solo',
+                keyboardType: TextInputType.text,
+                validator: _isEmptyValidator,
+              ),
+              _buildTextField(
+                label: 'Cultura',
+                controller: _cultureController,
+                hint: 'Digite a cultura',
+                keyboardType: TextInputType.text,
+                validator: _validateCustomString,
+              ),
+              _buildTextField(
+                label: 'Peso Verde (g)',
+                controller: _freshWeightController,
+                hint: 'Digite o peso verde',
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: _optionalWeightValidator,
+              ),
+              _buildTextField(
+                label: 'Peso Seco (g)',
+                controller: _dryWeightController,
+                hint: 'Digite o peso seco',
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: _optionalWeightValidator,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildActionButtons(),
-              ],
-            ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_formIsValid()) {
+                          _savePlantData();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ConsultaTabela()),
+                          );
+                        } else {
+                          _showSnackbar('Por favor, preencha todos os campos obrigatórios.');
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Salvar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildTextField({
@@ -149,13 +165,27 @@ class _RegistroState extends State<RegistroPlanta> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 20)),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Colors.white, // Labels em branco
+            ),
+          ),
+          const SizedBox(height: 8),
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
             decoration: InputDecoration(
               hintText: hint,
-              border: const OutlineInputBorder(),
+              hintStyle: const TextStyle(color: Colors.black54),
+              filled: true,
+              fillColor: Colors.white, // Preenchimento branco
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             validator: validator,
@@ -165,85 +195,25 @@ class _RegistroState extends State<RegistroPlanta> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 20)),
-          DropdownButtonFormField<String>(
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            hint: Text('Selecione $label'),
-            items: items.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-            onChanged: onChanged,
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Por favor, selecione uma opção.' : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: _buildActionButton('Cancelar', Colors.white, () {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
-          }),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildActionButton('Salvar', Colors.black, () {
-            if (_formIsValid()) {
-              _savePlantData();
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ConsultaTabela()));
-            } else {
-              _showSnackbar('Por favor, preencha todos os campos obrigatórios.');
-            }
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(String label, Color color, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-      ),
-      child: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 18, color: color == Colors.black ? Colors.white : Colors.black)),
-    );
-  }
-
   Future<void> _savePlantData() async {
-    final String name = _nameController.text.trim();
+    final String date = _dateController.text.trim();
+    final String pasture = _pastureController.text.trim();
     final String species = _speciesController.text.trim();
-    final String culture = _cultureController.text.trim();
     final int quantity = int.parse(_quantityController.text.trim());
+    final String condition = _conditionController.text.trim();
+    final String culture = _cultureController.text.trim();
     final double freshWeight = double.tryParse(_freshWeightController.text.trim()) ?? 0.0;
     final double dryWeight = double.tryParse(_dryWeightController.text.trim()) ?? 0.0;
 
     final plantData = {
-      "name": name,
+      "date": date,
+      "pasture": pasture,
       "species": species,
-      "pasture": selectedPasture,
-      "culture": culture,
-      "condicaoArea": selectedCondition,
       "quantity": quantity,
-      "date": DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
+      "condition": condition,
+      "culture": culture,
       "fresh_weight": freshWeight,
       "dry_weight": dryWeight,
-      //"docId": docRef.id,
     };
 
     await _plantBox.add(plantData);
@@ -253,12 +223,12 @@ class _RegistroState extends State<RegistroPlanta> {
   }
 
   bool _formIsValid() {
-    return _isEmptyValidator(_nameController.text) == null &&
-        _isEmptyValidator(_speciesController.text) == null &&
-        _isEmptyValidator(_cultureController.text) == null &&
+    return _isEmptyValidator(_dateController.text) == null &&
+        _isEmptyValidator(_pastureController.text) == null &&
+        _validateCustomString(_speciesController.text) == null &&
         _quantityValidator(_quantityController.text) == null &&
-        selectedPasture != null &&
-        selectedCondition != null;
+        _isEmptyValidator(_conditionController.text) == null &&
+        _validateCustomString(_cultureController.text) == null;
   }
 
   void _showSnackbar(String message) {
@@ -268,28 +238,23 @@ class _RegistroState extends State<RegistroPlanta> {
   String? _isEmptyValidator(String? value) =>
       (value == null || value.trim().isEmpty) ? 'Este campo é obrigatório.' : null;
 
- String? _quantityValidator(String? value) {
-    // Verifica se o valor é nulo ou vazio
+  String? _quantityValidator(String? value) {
     if (value == null || value.isEmpty) {
       showToast(message: 'A quantidade não pode estar vazia.');
       return 'A quantidade não pode estar vazia.';
     }
 
-    // Verifica se o valor é um número inteiro válido
     final quantity = int.tryParse(value);
     if (quantity == null) {
-      // Se não for um número inteiro, notifica o usuário e retorna uma mensagem
       showToast(message: 'A quantidade deve ser um número válido.');
       return 'A quantidade deve ser um número válido.';
     }
 
-    // Verifica se a quantidade está dentro do limite permitido (1 a 100000)
     if (quantity == 0 || quantity > 100000) {
       showToast(message: 'A quantidade deve estar entre 1 e 100.000.');
       return 'A quantidade deve estar entre 1 e 100.000.';
     }
 
-    // Se passar em todas as verificações, a validação é bem-sucedida
     return null;
   }
 
@@ -297,43 +262,38 @@ class _RegistroState extends State<RegistroPlanta> {
     if (value == null || value.isEmpty) return null;
     final weight = double.tryParse(value);
     if (weight != null) {
-      if (weight < 0 || weight > 1000000 ) {
-        return 'O peso deve estar entre 0,1 g e 1.000.000 g.';
+      if (weight < 10 || weight > 1000000) {
+        return 'O peso deve estar entre 10 g e 1.000.000 g.';
       }
     }
     return null;
   }
 
   String? _validateCustomString(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    showToast(message: 'Este campo é obrigatório.');
-    return 'Este campo é obrigatório.';
+    if (value == null || value.trim().isEmpty) {
+      showToast(message: 'Este campo é obrigatório.');
+      return 'Este campo é obrigatório.';
+    }
+
+    String normalizedValue = value.trim();
+
+    if (normalizedValue.length > 55) {
+      showToast(message: 'O texto não pode exceder 55 caracteres.');
+      return 'O texto não pode exceder 55 caracteres.';
+    }
+
+    final RegExp hasVowel = RegExp(r'[aeiouAEIOU]');
+    if (!hasVowel.hasMatch(normalizedValue)) {
+      showToast(message: 'O texto deve conter pelo menos uma vogal.');
+      return 'O texto deve conter pelo menos uma vogal.';
+    }
+
+    final RegExp repeatedChars = RegExp(r'(.)\1\1');
+    if (repeatedChars.hasMatch(normalizedValue)) {
+      showToast(message: 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.');
+      return 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.';
+    }
+
+    return null;
   }
-
-  // Remover espaços extras e normalizar o texto
-  String normalizedValue = value.trim();
-
-  // Verificar se o comprimento é maior que 55 caracteres
-  if (normalizedValue.length > 55) {
-    showToast(message: 'O texto não pode exceder 55 caracteres.');
-    return 'O texto não pode exceder 55 caracteres.';
-  }
-
-  // Verificar se contém pelo menos uma vogal
-  final RegExp hasVowel = RegExp(r'[aeiouAEIOU]');
-  if (!hasVowel.hasMatch(normalizedValue)) {
-    showToast(message: 'O texto deve conter pelo menos uma vogal.');
-    return 'O texto deve conter pelo menos uma vogal.';
-  }
-
-  // Verificar repetição de letras consecutivas (não mais que 2 vezes)
-  final RegExp repeatedChars = RegExp(r'(.)\1\1'); // Match 3 letras iguais consecutivas
-  if (repeatedChars.hasMatch(normalizedValue)) {
-    showToast(message: 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.');
-    return 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.';
-  }
-
-  return null; // Validação passou
-}
-
 }

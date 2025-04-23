@@ -161,7 +161,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // Função para validar telefone
   bool _isValidPhone(String phone) {
-    final regex = RegExp(r'^\(\d{2}\) \d{5}-\d{4}$');
+    final regex = RegExp(r'^\(\d{2}\)\d{5}-\d{4}$');
     return regex.hasMatch(phone);
   }
 

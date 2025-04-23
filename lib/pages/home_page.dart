@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o Firestore
 import 'registro_planta.dart';
 import 'consulta_tabela.dart';
 import 'package:hive/hive.dart';
+import 'creditos.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -157,7 +158,12 @@ Widget build(BuildContext context) {
                   icon: Icons.person,
                   label: 'Creditos',
                   onTap: () {
-                    // Ação para o botão "Creditos"
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreditosPage(),
+                      ),
+                    );
                   },
                 ),
                 _buildServiceButton(
@@ -212,5 +218,7 @@ Widget _buildServiceButton({
     ),
   );
 }
+
+
 
 }
