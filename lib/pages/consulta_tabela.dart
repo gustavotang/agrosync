@@ -1,12 +1,9 @@
-import 'package:agrosync/models/plant.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'registro_planta.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrosync/models/toast.dart';
-import 'home_page.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class ConsultaTabela extends StatefulWidget {
   const ConsultaTabela({super.key});
@@ -21,12 +18,15 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   List<Map<String, dynamic>> _filteredPlants = [];
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
+  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("plants");
+  //List<Map<String, dynamic>> _plants = [];
 
   @override
   void initState() {
     super.initState();
     _refreshItems();
     _syncWithFirestore();
+    _fetchRecentPlants();
 
     _searchController.addListener(() {
       _filterPlants();
@@ -61,6 +61,31 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       }
     }
   }
+
+  void _fetchRecentPlants() async {
+  try {
+    final snapshot = await _firestore.collection('plants').get();
+    final List<Map<String, dynamic>> plants = snapshot.docs.map((doc) {
+      return {
+        "ID": doc.id,
+        "Nome": doc["name"] ?? "",
+        "Especie": doc["species"] ?? "",
+        "Cultura": doc["culture"] ?? "",
+        "Data": doc["date"] ?? "",
+      };
+    }).toList();
+
+    // Ordenar por data (mais recentes primeiro)
+    plants.sort((a, b) => b["Data"].compareTo(a["Data"]));
+
+    setState(() {
+      _plants = plants;
+      _filteredPlants = _plants;
+    });
+  } catch (e) {
+    print("Erro ao buscar plantas do Firebase: $e");
+  }
+}
 
   void _refreshItems() {
     final data = _plantBox.keys.map((key) {
@@ -116,27 +141,6 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               keyboardType: TextInputType.text,
               validator: (value) => null,
             ),
-            _buildTextField(
-              label: 'Nome da espécie',
-              controller: TextEditingController(),
-              hint: 'Digite o nome da espécie',
-              keyboardType: TextInputType.text,
-              validator: (value) => null,
-            ),
-            _buildTextField(
-              label: 'Condição da Área',
-              controller: TextEditingController(),
-              hint: 'Digite a condição da área',
-              keyboardType: TextInputType.text,
-              validator: (value) => null,
-            ),
-            _buildTextField(
-              label: 'Cultura',
-              controller: TextEditingController(),
-              hint: 'Digite a cultura',
-              keyboardType: TextInputType.text,
-              validator: (value) => null,
-            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -172,7 +176,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Recente',
+              'Tabela de Plantas',
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -181,35 +185,39 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView.builder(
-                itemCount: _filteredPlants.length,
-                itemBuilder: (context, index) {
-                  final plant = _filteredPlants[index];
-                  return ListTile(
-                    leading: const Icon(Icons.grass, color: Colors.black),
-                    title: Text(
-                      plant['Nome'],
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Container(
+                  alignment: Alignment.center, // Centraliza horizontalmente
+                  padding: const EdgeInsets.all(16.0), // Espaçamento ao redor da tabela
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Fundo branco para a tabela
+                    borderRadius: BorderRadius.circular(12), // Bordas arredondadas
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1), // Sombra leve
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    subtitle: Text(
-                      plant['Data'],
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.black),
-                      onPressed: () {
-                        _editItem(index);
-                      },
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text("Nome", style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("Espécie", style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("Cultura", style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("Data", style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: _filteredPlants.map((plant) {
+                      return DataRow(cells: [
+                        DataCell(Text(plant['Nome'])),
+                        DataCell(Text(plant['Especie'])),
+                        DataCell(Text(plant['Cultura'])),
+                        DataCell(Text(plant['Data'])),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
           ],
@@ -235,7 +243,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               fontSize: 20,
-              color: Colors.white, // Labels em branco
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
@@ -246,7 +254,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               hintText: hint,
               hintStyle: const TextStyle(color: Colors.black54),
               filled: true,
-              fillColor: Colors.white, // Preenchimento branco
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
@@ -258,9 +266,5 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
         ],
       ),
     );
-  }
-
-  void _showSnackbar(String message) {
-    showToast(message: message);
   }
 }

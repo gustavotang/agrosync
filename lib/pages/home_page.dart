@@ -51,6 +51,58 @@ class HomePage extends StatelessWidget {
     }
   }
 
+  // Função para buscar o total de plantas registradas no Firestore
+  Future<int> _getTotalPlants() async {
+    final snapshot = await _firestore.collection('plants').get();
+    return snapshot.docs.length;
+  }
+
+  // Função para buscar o total de usuários cadastrados no Firestore
+  Future<int> _getTotalUsers() async {
+    final snapshot = await _firestore.collection('users').get();
+    return snapshot.docs.length;
+  }
+
+  // Função para criar os cartões do dashboard
+  Widget _buildDashboardCard({
+    required String title,
+    required Future<int> futureValue,
+  }) {
+    return FutureBuilder<int>(
+      future: futureValue,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator(color: Colors.white);
+        }
+        if (snapshot.hasError) {
+          return const Text(
+            'Erro',
+            style: TextStyle(color: Colors.white),
+          );
+        }
+        return Column(
+          children: [
+            Text(
+              snapshot.data.toString(),
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
 Widget build(BuildContext context) {
@@ -80,7 +132,7 @@ Widget build(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'GUSTAVO',
+                      'ADMIN',
                       style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -95,6 +147,29 @@ Widget build(BuildContext context) {
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Dashboard com métricas do Firebase
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: const Color(0xFF388E3C), // Verde mais escuro
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildDashboardCard(
+                  title: 'Plantas Registradas',
+                  futureValue: _getTotalPlants(),
+                ),
+                _buildDashboardCard(
+                  title: 'Usuários Cadastrados',
+                  futureValue: _getTotalUsers(),
                 ),
               ],
             ),

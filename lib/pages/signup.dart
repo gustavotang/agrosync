@@ -89,63 +89,67 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _validateAllFields() {
   // Valida os campos da primeira página
-  if (_firstNameController.text.isEmpty) {
+  if (_firstNameController.text.trim().isEmpty) {
     showToast(message: "O campo Nome é obrigatório.");
     return false;
   }
-  if (_lastNameController.text.isEmpty) {
+  if (_lastNameController.text.trim().isEmpty) {
     showToast(message: "O campo Sobrenome é obrigatório.");
     return false;
   }
-  if (_cpfController.text.isEmpty || !_isValidCPF(_cpfController.text)) {
+  if (_cpfController.text.trim().isEmpty || !_isValidCPF(_cpfController.text.trim())) {
     showToast(message: "O CPF informado é inválido.");
     return false;
   }
-  if (_phoneController.text.isEmpty || !_isValidPhone(_phoneController.text)) {
+  if (_phoneController.text.trim().isEmpty || !_isValidPhone(_phoneController.text.trim())) {
     showToast(message: "O Telefone informado é inválido. Use o formato (XX) XXXXX-XXXX.");
     return false;
   }
-  if (_birthDateController.text.isEmpty || !_isValidDate(_birthDateController.text)) {
+  if (_birthDateController.text.trim().isEmpty || !_isValidDate(_birthDateController.text.trim())) {
     showToast(message: "A Data de Nascimento informada é inválida. Use o formato DD/MM/AAAA.");
     return false;
   }
 
   // Valida os campos da segunda página
-  if (_cityController.text.isEmpty) {
+  if (_cityController.text.trim().isEmpty) {
     showToast(message: "O campo Cidade é obrigatório.");
     return false;
   }
-  if (_stateController.text.isEmpty) {
+  if (_stateController.text.trim().isEmpty) {
     showToast(message: "O campo Estado é obrigatório.");
     return false;
   }
-  if (_addressController.text.isEmpty) {
+  if (_addressController.text.trim().isEmpty) {
     showToast(message: "O campo Endereço é obrigatório.");
     return false;
   }
-  if (_numberController.text.isEmpty) {
+  if (_numberController.text.trim().isEmpty) {
     showToast(message: "O campo Número é obrigatório.");
     return false;
   }
-  if (_zipCodeController.text.isEmpty || !_isValidZipCode(_zipCodeController.text)) {
+  if (_zipCodeController.text.trim().isEmpty || !_isValidZipCode(_zipCodeController.text.trim())) {
     showToast(message: "O CEP informado é inválido. Use o formato XXXXX-XXX.");
     return false;
   }
 
   // Valida os campos da terceira página
-  if (_emailController.text.isEmpty || !_isValidEmail(_emailController.text)) {
+  if (_emailController.text.trim().isEmpty || !_isValidEmail(_emailController.text.trim())) {
     showToast(message: "O Email informado é inválido.");
     return false;
   }
-  if (_passwordController.text.isEmpty) {
+  if (_passwordController.text.trim().isEmpty) {
     showToast(message: "O campo Senha é obrigatório.");
     return false;
   }
-  if (_confirmPasswordController.text.isEmpty) {
+  if (!_isValidPassword(_passwordController.text.trim())) {
+    showToast(message: "A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial.");
+    return false;
+  }
+  if (_confirmPasswordController.text.trim().isEmpty) {
     showToast(message: "O campo Confirmar Senha é obrigatório.");
     return false;
   }
-  if (_passwordController.text != _confirmPasswordController.text) {
+  if (_passwordController.text.trim() != _confirmPasswordController.text.trim()) {
     showToast(message: "As senhas não coincidem.");
     return false;
   }
@@ -155,25 +159,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // Função para validar CPF
   bool _isValidCPF(String cpf) {
-    final regex = RegExp(r'^\d{3}\.\d{3}\.\d{3}-\d{2}$');
-    return regex.hasMatch(cpf);
+    // Remove caracteres não numéricos
+    // cpf = cpf.replaceAll(RegExp(r'\D'), '');
+
+    // // if (cpf.length != 11 || RegExp(r'^(\d)\1*$').hasMatch(cpf)) {
+    // //   return false; // Verifica se o CPF tem 11 dígitos e não é uma sequência repetida
+    // // }
+
+    // // Validação dos dígitos verificadores
+    // for (int i = 9; i < 11; i++) {
+    //   int sum = 0;
+    //   for (int j = 0; j < i; j++) {
+    //     sum += int.parse(cpf[j]) * ((i + 1) - j);
+    //   }
+    //   int digit = (sum * 10) % 11;
+    //   if (digit == 10) digit = 0;
+    //   if (digit != int.parse(cpf[i])) {
+    //     return false;
+    //   }
+    // }
+
+    return true;
   }
 
   // Função para validar telefone
   bool _isValidPhone(String phone) {
-    final regex = RegExp(r'^\(\d{2}\)\d{5}-\d{4}$');
+    final regex = RegExp(r'^\(\d{2}\) \d{4,5}-\d{4}$'); // Formato: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
     return regex.hasMatch(phone);
   }
 
   // Função para validar data no formato DD/MM/AAAA
   bool _isValidDate(String date) {
     final regex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
-    return regex.hasMatch(date);
+    if (!regex.hasMatch(date)) return false;
+
+    try {
+      final parts = date.split('/');
+      final day = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final year = int.parse(parts[2]);
+
+      final parsedDate = DateTime(year, month, day);
+      return parsedDate.day == day && parsedDate.month == month && parsedDate.year == year;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Função para validar CEP
   bool _isValidZipCode(String zipCode) {
-    final regex = RegExp(r'^\d{5}-\d{3}$');
+    final regex = RegExp(r'^\d{5}-\d{3}$'); // Formato: XXXXX-XXX
     return regex.hasMatch(zipCode);
   }
 
@@ -181,6 +216,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isValidEmail(String email) {
     final regex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     return regex.hasMatch(email);
+  }
+
+  // Função para validar senha
+  bool _isValidPassword(String password) {
+    if (password.length < 8) return false; // Mínimo de 8 caracteres
+    final hasUppercase = password.contains(RegExp(r'[A-Z]')); // Pelo menos uma letra maiúscula
+    final hasLowercase = password.contains(RegExp(r'[a-z]')); // Pelo menos uma letra minúscula
+    final hasNumber = password.contains(RegExp(r'[0-9]')); // Pelo menos um número
+    final hasSpecialChar = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')); // Pelo menos um caractere especial
+
+    return hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
   }
 
   bool _validateCurrentPage() {
