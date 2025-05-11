@@ -5,13 +5,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o Firestore
 import 'registro_planta.dart';
 import 'consulta_tabela.dart';
+import 'adicionar_campo.dart';
 import 'package:hive/hive.dart';
 import 'creditos.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
 
   final _firestore = FirebaseFirestore.instance;
+  
   late Box<Map<String, dynamic>> _plantBox;
 
   // Sincronização com Firestore
@@ -199,8 +204,7 @@ Widget build(BuildContext context) {
                   label: 'Registrar Planta',
                   onTap: () {
                     Plant newPlant = Plant(
-                      name: "capim teste",
-                      species: "teste",
+                      species: "capim teste", // Alterado de "name" para "species"
                       date: DateTime.now(),
                       pasture: "teste",
                       culture: "teste",
@@ -220,7 +224,17 @@ Widget build(BuildContext context) {
                 _buildServiceButton(
                   icon: Icons.search,
                   label: 'Consultar Planta',
-                  onTap: () {
+                  onTap: () async {
+                    final snapshot = await _firestore.collection('plants').get();
+                    final List<Map<String, dynamic>> plants = snapshot.docs.map((doc) {
+                      return {
+                        "ID": doc.id,
+                        "Espécie": doc["species"] ?? "",
+                        "Pasto": doc["pasture"] ?? "",
+                        "Cultura": doc["culture"] ?? "",
+                        "Data": doc["date"] ?? "",
+                      };
+                    }).toList();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -245,7 +259,12 @@ Widget build(BuildContext context) {
                   icon: Icons.add_location_alt,
                   label: 'Adicionar Campo',
                   onTap: () {
-                    // Ação para o botão "Adicionar Campo"
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdicionarCampoPage(),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -294,6 +313,32 @@ Widget _buildServiceButton({
   );
 }
 
+Future<Map<String, dynamic>?> fetchUserData(String userId) async {
+  try {
+    DatabaseReference databaseRef = FirebaseDatabase.instance.ref("users/$userId");
+    final snapshot = await databaseRef.get();
 
+    if (snapshot.exists) {
+      return Map<String, dynamic>.from(snapshot.value as Map);
+    } else {
+      print("Usuário não encontrado.");
+      return null;
+    }
+  } catch (e) {
+    print("Erro ao buscar dados do usuário: $e");
+    return null;
+  }
+}
+
+void getUserData() async {
+  String userId = FirebaseAuth.instance.currentUser!.uid; // Obtém o UID do usuário autenticado
+  Map<String, dynamic>? userData = await fetchUserData(userId);
+
+  if (userData != null) {
+    print("Dados do usuário: $userData");
+  } else {
+    print("Nenhum dado encontrado para o usuário.");
+  }
+}
 
 }

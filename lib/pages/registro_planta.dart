@@ -19,7 +19,6 @@ class RegistroPlanta extends StatefulWidget {
 
 class _RegistroState extends State<RegistroPlanta> {
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _pastureController = TextEditingController();
   final TextEditingController _speciesController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _conditionController = TextEditingController();
@@ -28,11 +27,31 @@ class _RegistroState extends State<RegistroPlanta> {
   final TextEditingController _dryWeightController = TextEditingController();
 
   var _plantBox = Hive.box('plant_box');
+  List<Map<String, dynamic>> _pastures = [];
+  String? _selectedPastureId;
+  List<String> _dropdownFields = [];
+  String? _selectedField;
 
   @override
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    _loadPastures();
+    _loadDropdownFields();
+  }
+
+  void _loadPastures() async {
+    final pastures = await _fetchPastures();
+    setState(() {
+      _pastures = pastures;
+    });
+  }
+
+  void _loadDropdownFields() async {
+    final fields = await _fetchDropdownFields();
+    setState(() {
+      _dropdownFields = fields;
+    });
   }
 
   @override
@@ -56,12 +75,22 @@ class _RegistroState extends State<RegistroPlanta> {
                 keyboardType: TextInputType.datetime,
                 validator: _isEmptyValidator,
               ),
-              _buildTextField(
+              _buildDropdownField<String>(
                 label: 'Pasto',
-                controller: _pastureController,
-                hint: 'Digite o pasto',
-                keyboardType: TextInputType.text,
-                validator: _isEmptyValidator,
+                value: _selectedPastureId,
+                items: _pastures.map((pasture) {
+                  return DropdownMenuItem<String>(
+                    value: pasture['id'],
+                    child: Text(pasture['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPastureId = value;
+                  });
+                },
+                validator: (value) =>
+                    value == null ? 'Selecione um pasto.' : null,
               ),
               _buildTextField(
                 label: 'Nome da espécie',
@@ -104,6 +133,27 @@ class _RegistroState extends State<RegistroPlanta> {
                 hint: 'Digite o peso seco',
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 validator: _optionalWeightValidator,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedField,
+                items: _dropdownFields.map((field) {
+                  return DropdownMenuItem<String>(
+                    value: field,
+                    child: Text(field),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedField = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Selecione um Campo',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -195,19 +245,61 @@ class _RegistroState extends State<RegistroPlanta> {
     );
   }
 
+  Widget _buildDropdownField<T>({
+    required String label,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required void Function(T?) onChanged,
+    String? Function(T?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Colors.white, // Labels em branco
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<T>(
+            value: value,
+            items: items,
+            onChanged: onChanged,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white, // Fundo branco
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            validator: validator,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _savePlantData() async {
     final String date = _dateController.text.trim();
-    final String pasture = _pastureController.text.trim();
+    final String pastureId = _selectedPastureId!; // Obtém o ID do pasto selecionado
     final String species = _speciesController.text.trim();
     final int quantity = int.parse(_quantityController.text.trim());
     final String condition = _conditionController.text.trim();
     final String culture = _cultureController.text.trim();
-    final double freshWeight = double.tryParse(_freshWeightController.text.trim()) ?? 0.0;
-    final double dryWeight = double.tryParse(_dryWeightController.text.trim()) ?? 0.0;
+    final double freshWeight =
+        double.tryParse(_freshWeightController.text.trim()) ?? 0.0;
+    final double dryWeight =
+        double.tryParse(_dryWeightController.text.trim()) ?? 0.0;
 
     final plantData = {
       "date": date,
-      "pasture": pasture,
+      "pasture_id": pastureId, // Salva o ID do pasto
       "species": species,
       "quantity": quantity,
       "condition": condition,
@@ -224,7 +316,7 @@ class _RegistroState extends State<RegistroPlanta> {
 
   bool _formIsValid() {
     return _isEmptyValidator(_dateController.text) == null &&
-        _isEmptyValidator(_pastureController.text) == null &&
+        _selectedPastureId != null &&
         _validateCustomString(_speciesController.text) == null &&
         _quantityValidator(_quantityController.text) == null &&
         _isEmptyValidator(_conditionController.text) == null &&
@@ -295,5 +387,28 @@ class _RegistroState extends State<RegistroPlanta> {
     }
 
     return null;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchPastures() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('pastures').get();
+      return snapshot.docs.map((doc) => {
+            'id': doc.id,
+            'name': doc['name'],
+          }).toList();
+    } catch (e) {
+      showToast(message: "Erro ao carregar pastos: $e");
+      return [];
+    }
+  }
+
+  Future<List<String>> _fetchDropdownFields() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('dropdown_fields').get();
+      return snapshot.docs.map((doc) => doc['name'] as String).toList();
+    } catch (e) {
+      print('Erro ao buscar campos: $e');
+      return [];
+    }
   }
 }

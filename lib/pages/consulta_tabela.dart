@@ -1,9 +1,12 @@
+import 'package:agrosync/models/plant.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
+import 'registro_planta.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:agrosync/models/toast.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'home_page.dart';
 
 class ConsultaTabela extends StatefulWidget {
   const ConsultaTabela({super.key});
@@ -18,15 +21,12 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   List<Map<String, dynamic>> _filteredPlants = [];
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("plants");
-  //List<Map<String, dynamic>> _plants = [];
 
   @override
   void initState() {
     super.initState();
     _refreshItems();
     _syncWithFirestore();
-    _fetchRecentPlants();
 
     _searchController.addListener(() {
       _filterPlants();
@@ -38,8 +38,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
 
     setState(() {
       _filteredPlants = _plants.where((plant) {
-        return plant['Nome'].toLowerCase().contains(query) ||
-            plant['Especie'].toLowerCase().contains(query) ||
+        return plant['Espécie'].toLowerCase().contains(query) || // Alterado de "Nome" para "Espécie"
+            plant['Pasto'].toLowerCase().contains(query) ||
             plant['Cultura'].toLowerCase().contains(query) ||
             plant['Data'].toLowerCase().contains(query);
       }).toList();
@@ -62,41 +62,15 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
     }
   }
 
-  void _fetchRecentPlants() async {
-  try {
-    final snapshot = await _firestore.collection('plants').get();
-    final List<Map<String, dynamic>> plants = snapshot.docs.map((doc) {
-      return {
-        "ID": doc.id,
-        "Nome": doc["name"] ?? "",
-        "Especie": doc["species"] ?? "",
-        "Cultura": doc["culture"] ?? "",
-        "Data": doc["date"] ?? "",
-      };
-    }).toList();
-
-    // Ordenar por data (mais recentes primeiro)
-    plants.sort((a, b) => b["Data"].compareTo(a["Data"]));
-
-    setState(() {
-      _plants = plants;
-      _filteredPlants = _plants;
-    });
-  } catch (e) {
-    print("Erro ao buscar plantas do Firebase: $e");
-  }
-}
-
   void _refreshItems() {
     final data = _plantBox.keys.map((key) {
       final item = _plantBox.get(key);
       return {
         "ID": key,
-        "Nome": item["name"],
-        "Especie": item["species"],
+        "Espécie": item["species"], // Alterado de "Nome" para "Espécie"
         "Pasto": item["pasture"],
         "Cultura": item["culture"],
-        "Condiação da Área": item["condicaoArea"],
+        "Condição da Área": item["condicaoArea"],
         "Quantidade": item["quantity"],
         "Data": item["date"],
         "Peso Verde": item["fresh_weight"],
@@ -111,22 +85,194 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   }
 
   void _editItem(int index) {
-    // Implementação da edição do item
+    final plant = _filteredPlants[index];
+    final TextEditingController dateController =
+        TextEditingController(text: plant['Data']);
+    final TextEditingController pastureController =
+        TextEditingController(text: plant['Pasto']);
+    final TextEditingController speciesController =
+        TextEditingController(text: plant['Espécie']);
+    final TextEditingController quantityController =
+        TextEditingController(text: plant['Quantidade'].toString());
+    final TextEditingController condicaoAreaController =
+        TextEditingController(text: plant['Condição da Área']);
+    final TextEditingController cultureController =
+        TextEditingController(text: plant['Cultura']);
+    final TextEditingController freshWeightController =
+        TextEditingController(text: plant['Peso Verde'].toString());
+    final TextEditingController dryWeightController =
+        TextEditingController(text: plant['Peso Seco'].toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF4B8B3B), // Fundo verde
+          title: const Text(
+            'Editar planta',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // Texto branco
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTextField(
+                  label: 'Data',
+                  controller: dateController,
+                  hint: 'DD/MM/AAAA',
+                  keyboardType: TextInputType.datetime,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A data é obrigatória';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Pasto',
+                  controller: pastureController,
+                  hint: 'Digite o pasto',
+                  keyboardType: TextInputType.text,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'O pasto é obrigatório';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Nome da espécie',
+                  controller: speciesController,
+                  hint: 'Digite o nome da espécie',
+                  keyboardType: TextInputType.text,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'O nome da espécie é obrigatório';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Quantidade',
+                  controller: quantityController,
+                  hint: 'Digite a quantidade',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A quantidade é obrigatória';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Condição da Área',
+                  controller: condicaoAreaController,
+                  hint: 'Digite a condição da área',
+                  keyboardType: TextInputType.text,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A condição da área é obrigatória';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Cultura',
+                  controller: cultureController,
+                  hint: 'Digite a cultura',
+                  keyboardType: TextInputType.text,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'A cultura é obrigatória';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Peso Verde (g)',
+                  controller: freshWeightController,
+                  hint: 'Digite o peso verde',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'O peso verde é obrigatório';
+                    }
+                    return null;
+                  },
+                ),
+                _buildTextField(
+                  label: 'Peso Seco (g)',
+                  controller: dryWeightController,
+                  hint: 'Digite o peso seco',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'O peso seco é obrigatório';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.black, // Texto preto
+                backgroundColor: Colors.white, // Fundo branco
+              ),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _filteredPlants[index] = {
+                    "ID": plant["ID"],
+                    "Data": dateController.text,
+                    "Pasto": pastureController.text,
+                    "Espécie": speciesController.text,
+                    "Quantidade": int.tryParse(quantityController.text) ?? 0,
+                    "Condição da Área": condicaoAreaController.text,
+                    "Cultura": cultureController.text,
+                    "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
+                    "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
+                  };
+                  _plantBox.put(plant["ID"], _filteredPlants[index]);
+                });
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF388E3C), // Verde escuro
+                foregroundColor: Colors.white, // Texto branco
+              ),
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4B8B3B),
+      backgroundColor: const Color(0xFF4B8B3B), // Fundo verde
       appBar: AppBar(
         title: const Text('Consultar Plantas'),
-        backgroundColor: const Color(0xFF388E3C),
+        backgroundColor: const Color(0xFF388E3C), // Verde escuro
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Campos de entrada
             _buildTextField(
               label: 'Data',
               controller: TextEditingController(),
@@ -141,9 +287,31 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               keyboardType: TextInputType.text,
               validator: (value) => null,
             ),
+            _buildTextField(
+              label: 'Nome da espécie',
+              controller: TextEditingController(),
+              hint: 'Digite o nome da espécie',
+              keyboardType: TextInputType.text,
+              validator: (value) => null,
+            ),
+            _buildTextField(
+              label: 'Condição da Área',
+              controller: TextEditingController(),
+              hint: 'Digite a condição da área',
+              keyboardType: TextInputType.text,
+              validator: (value) => null,
+            ),
+            _buildTextField(
+              label: 'Cultura',
+              controller: TextEditingController(),
+              hint: 'Digite a cultura',
+              keyboardType: TextInputType.text,
+              validator: (value) => null,
+            ),
             const SizedBox(height: 16),
+
+            // Botões
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: ElevatedButton(
@@ -151,8 +319,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
+                      backgroundColor: Colors.white, // Fundo branco
+                      foregroundColor: Colors.black, // Texto preto
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text('Cancelar'),
@@ -165,8 +333,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                       _filterPlants();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.black, // Fundo preto
+                      foregroundColor: Colors.white, // Texto branco
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text('Procurar'),
@@ -175,48 +343,54 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               ],
             ),
             const SizedBox(height: 24),
-            Text(
-              'Tabela de Plantas',
-              style: GoogleFonts.inter(
+
+            // Título da lista
+            const Text(
+              'Recente',
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.white, // Texto branco
               ),
             ),
             const SizedBox(height: 8),
+
+            // Lista de plantas
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  alignment: Alignment.center, // Centraliza horizontalmente
-                  padding: const EdgeInsets.all(16.0), // Espaçamento ao redor da tabela
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Fundo branco para a tabela
-                    borderRadius: BorderRadius.circular(12), // Bordas arredondadas
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1), // Sombra leve
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+              child: Container(
+                color: Colors.white, // Fundo branco para a lista
+                child: ListView.builder(
+                  itemCount: _filteredPlants.length,
+                  itemBuilder: (context, index) {
+                    final plant = _filteredPlants[index];
+                    final species = plant['Espécie'] ?? "Espécie não disponível";
+                    final date = plant['Data'] ?? "Data não disponível";
+
+                    return ListTile(
+                      leading: const Icon(Icons.grass, color: Colors.black),
+                      title: Text(
+                        species,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black, // Texto preto
+                        ),
                       ),
-                    ],
-                  ),
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text("Nome", style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("Espécie", style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("Cultura", style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("Data", style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: _filteredPlants.map((plant) {
-                      return DataRow(cells: [
-                        DataCell(Text(plant['Nome'])),
-                        DataCell(Text(plant['Especie'])),
-                        DataCell(Text(plant['Cultura'])),
-                        DataCell(Text(plant['Data'])),
-                      ]);
-                    }).toList(),
-                  ),
+                      subtitle: Text(
+                        date,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54, // Texto cinza escuro
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.black),
+                        onPressed: () {
+                          _editItem(index); // Chama o método _editItem ao clicar no botão
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -243,7 +417,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               fontSize: 20,
-              color: Colors.white,
+              color: Colors.white, // Labels em branco
             ),
           ),
           const SizedBox(height: 8),
@@ -254,7 +428,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               hintText: hint,
               hintStyle: const TextStyle(color: Colors.black54),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Colors.white, // Preenchimento branco
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
@@ -266,5 +440,9 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
         ],
       ),
     );
+  }
+
+  void _showSnackbar(String message) {
+    showToast(message: message);
   }
 }

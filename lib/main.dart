@@ -25,7 +25,8 @@ void main() async {
   try {
     await Hive.initFlutter();
     Hive.registerAdapter(PlantAdapter());
-    await Hive.openBox('plant_box');
+    final box = await Hive.openBox('plant_box');
+    print("Dados no Hive após inicialização: ${box.values.toList()}");
   } catch (e) {
     print('Erro ao inicializar o Hive: $e');
   }
@@ -43,6 +44,16 @@ class AgroControlApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
     );
+  }
+}
+
+void limparHive() async {
+  try {
+    final box = Hive.box('plant_box');
+    await box.clear();
+    print("Hive limpo com sucesso!");
+  } catch (e) {
+    print("Erro ao limpar o Hive: $e");
   }
 }
 

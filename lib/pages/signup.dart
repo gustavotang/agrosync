@@ -5,6 +5,33 @@ import 'package:google_fonts/google_fonts.dart';
 import 'home_page.dart'; 
 import 'package:agrosync/firebase_auth_implementation/firebase_auth_services.dart';
 import 'package:agrosync/models/toast.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class LocationService {
+  // Busca os estados do Brasil
+  static Future<List<String>> fetchStates() async {
+    final response = await http.get(Uri.parse('https://servicodados.ibge.gov.br/api/v1/localidades/estados'));
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((state) => state['nome'] as String).toList();
+    } else {
+      throw Exception('Erro ao buscar estados');
+    }
+  }
+
+  // Busca as cidades de um estado
+  static Future<List<String>> fetchCities(String stateUf) async {
+    final response = await http.get(Uri.parse('https://servicodados.ibge.gov.br/api/v1/localidades/estados/$stateUf/municipios'));
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((city) => city['nome'] as String).toList();
+    } else {
+      throw Exception('Erro ao buscar cidades');
+    }
+  }
+}
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -36,6 +63,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+
+  final dateMask = MaskTextInputFormatter(mask: '##/##/####', filter: {"#": RegExp(r'[0-9]')});
+  final cpfMask = MaskTextInputFormatter(mask: '###.###.###-##', filter: {"#": RegExp(r'[0-9]')});
+  final phoneMask = MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
+  final zipCodeMask = MaskTextInputFormatter(mask: '#####-###', filter: {"#": RegExp(r'[0-9]')});
+
+  String? _selectedState;
+  String? _selectedCity;
+  Map<String, String> _stateUfMap = {}; // Mapeia o nome do estado para o código UF
+  List<String> _states = []; // Lista de nomes dos estados
+  List<String> _cities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStates();
+  }
+
+  void _loadStates() async {
+    try {
+      final response = await http.get(Uri.parse('https://servicodados.ibge.gov.br/api/v1/localidades/estados'));
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        setState(() {
+          _stateUfMap = {
+            for (var state in data) state['nome']: state['sigla'], // Nome -> UF
+          };
+          _states = _stateUfMap.keys.toList(); // Apenas os nomes dos estados
+        });
+      } else {
+        throw Exception('Erro ao buscar estados');
+      }
+    } catch (e) {
+      showToast(message: "Erro ao carregar estados: $e");
+    }
+  }
+
+  void _loadCities(String stateUf) async {
+    try {
+      final cities = await LocationService.fetchCities(stateUf);
+      setState(() {
+        _cities = cities;
+      });
+    } catch (e) {
+      showToast(message: "Erro ao carregar cidades: $e");
+    }
+  }
 
   @override
   void dispose() {
@@ -380,65 +454,167 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
   
   Widget _buildFirstPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildTextField(controller: _firstNameController, label: 'Nome'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _lastNameController, label: 'Sobrenome'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _cpfController, label: 'CPF'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _phoneController, label: 'Telefone'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _birthDateController, label: 'Data de Nascimento'),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTextField(
+          controller: _firstNameController,
+          label: 'Nome',
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _lastNameController,
+          label: 'Sobrenome',
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _cpfController,
+          label: 'CPF',
+          maskFormatter: cpfMask, // Máscara de CPF
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _phoneController,
+          label: 'Telefone',
+          maskFormatter: phoneMask, // Máscara de telefone
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _birthDateController,
+          label: 'Data de Nascimento',
+          maskFormatter: dateMask, // Máscara de data
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildSecondPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildTextField(controller: _cityController, label: 'Cidade'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _stateController, label: 'Estado'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _addressController, label: 'Endereço'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _numberController, label: 'Número'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _complementController, label: 'Complemento'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _zipCodeController, label: 'CEP'),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Dropdown de Estado
+        const Text(
+          'Estado',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedState,
+          items: _states.map((String state) {
+            return DropdownMenuItem<String>(
+              value: state,
+              child: Text(state),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedState = value;
+              _stateController.text = value!; // Atualiza o controlador de texto
+            });
+          },
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.1),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Campo de texto para Cidade
+        _buildTextField(
+          controller: _cityController,
+          label: 'Cidade',
+        ),
+        const SizedBox(height: 20),
+
+        // Outros campos
+        _buildTextField(
+          controller: _addressController,
+          label: 'Endereço',
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _numberController,
+          label: 'Número',
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _complementController,
+          label: 'Complemento (opcional)',
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Este campo é opcional. Preencha apenas se necessário.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white70, // Texto em branco com opacidade
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _zipCodeController,
+          label: 'CEP',
+          maskFormatter: zipCodeMask, // Máscara de CEP
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildThirdPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildTextField(controller: _emailController, label: 'Email'),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _passwordController, label: 'Senha', obscureText: true),
-          const SizedBox(height: 20),
-          _buildTextField(controller: _confirmPasswordController, label: 'Confirme a Senha', obscureText: true),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTextField(
+          controller: _emailController,
+          label: 'Email',
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _passwordController,
+          label: 'Senha',
+          obscureText: true,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white70, // Texto em branco com opacidade
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildTextField(
+          controller: _confirmPasswordController,
+          label: 'Confirme a Senha',
+          obscureText: true,
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildTextField({required TextEditingController controller, required String label, bool obscureText = false}) {
-    return Column(
+  Widget _buildTextField({
+  required TextEditingController controller,
+  required String label,
+  bool obscureText = false,
+  MaskTextInputFormatter? maskFormatter, // Adicionado para máscaras
+}) {
+  return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -456,6 +632,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           fontSize: 18,
           color: Colors.white, // Texto em branco
         ),
+        inputFormatters: maskFormatter != null ? [maskFormatter] : [], // Aplicar máscara
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white.withOpacity(0.1), // Fundo semitransparente
@@ -476,6 +653,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     ],
   );
-  }
+}
 
 }

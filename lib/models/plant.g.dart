@@ -8,7 +8,7 @@ part of 'plant.dart';
 
 class PlantAdapter extends TypeAdapter<Plant> {
   @override
-  final int typeId = 1;
+  final int typeId = 0;
 
   @override
   Plant read(BinaryReader reader) {
@@ -18,41 +18,38 @@ class PlantAdapter extends TypeAdapter<Plant> {
     };
     return Plant(
       id: fields[0] as int?,
-      name: fields[1] as String,
-      species: fields[2] as String,
-      pasture: fields[3] as String,
-      culture: fields[4] as String,
-      condicaoArea: fields[5] as String,
-      quantity: fields[6] as int,
-      date: fields[7] as DateTime,
-      fresh_weight: fields[8] as double,
-      dry_weight: fields[9] as double,
+      species: fields[1] as String, // Atualizado de "name" para "species"
+      pasture: fields[2] as String,
+      culture: fields[3] as String,
+      condicaoArea: fields[4] as String,
+      quantity: fields[5] as int,
+      date: fields[6] as DateTime,
+      fresh_weight: fields[7] as double?,
+      dry_weight: fields[8] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Plant obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.name)
+      ..write(obj.species) // Atualizado de "name" para "species"
       ..writeByte(2)
-      ..write(obj.species)
-      ..writeByte(3)
       ..write(obj.pasture)
-      ..writeByte(4)
+      ..writeByte(3)
       ..write(obj.culture)
-      ..writeByte(5)
+      ..writeByte(4)
       ..write(obj.condicaoArea)
-      ..writeByte(6)
+      ..writeByte(5)
       ..write(obj.quantity)
-      ..writeByte(7)
+      ..writeByte(6)
       ..write(obj.date)
-      ..writeByte(8)
+      ..writeByte(7)
       ..write(obj.fresh_weight)
-      ..writeByte(9)
+      ..writeByte(8)
       ..write(obj.dry_weight);
   }
 
