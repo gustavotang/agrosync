@@ -56,12 +56,49 @@ class _RegistroState extends State<RegistroPlanta> {
                 keyboardType: TextInputType.datetime,
                 validator: _isEmptyValidator,
               ),
-              _buildTextField(
-                label: 'Pasto',
-                controller: _pastureController,
-                hint: 'Digite o pasto',
-                keyboardType: TextInputType.text,
-                validator: _isEmptyValidator,
+              // Troca o campo de texto de Pasto por um DropdownButtonFormField
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pasto',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _pastureController.text.isNotEmpty ? _pastureController.text : null,
+                      items: List.generate(4, (index) {
+                        final value = (index + 1).toString();
+                        return DropdownMenuItem(
+                          value: value,
+                          child: Text('Pasto $value'),
+                        );
+                      }),
+                      onChanged: (value) {
+                        setState(() {
+                          _pastureController.text = value ?? '';
+                        });
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: 'Selecione o pasto',
+                        hintStyle: const TextStyle(color: Colors.black54),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Selecione o pasto.' : null,
+                    ),
+                  ],
+                ),
               ),
               _buildTextField(
                 label: 'Nome da espécie',
@@ -290,8 +327,8 @@ class _RegistroState extends State<RegistroPlanta> {
 
     final RegExp repeatedChars = RegExp(r'(.)\1\1');
     if (repeatedChars.hasMatch(normalizedValue)) {
-      showToast(message: 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.');
-      return 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivamente.';
+      showToast(message: 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivas.');
+      return 'Não é permitido repetir a mesma letra mais de 2 vezes consecutivas.';
     }
 
     return null;
