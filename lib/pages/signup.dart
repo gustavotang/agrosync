@@ -75,6 +75,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   List<String> _states = []; // Lista de nomes dos estados
   List<String> _cities = [];
 
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -139,7 +142,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      _submitForm();
+      _submitForm(); // Chama o método para finalizar o cadastro
     }
   }
 }
@@ -152,6 +155,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _submitForm() {
   if (_validateAllFields()) {
+    _signUp(); // Chama a função para criar o usuário
     // Exibe mensagem de sucesso
     showToast(message: "Cadastro realizado com sucesso!");
     Navigator.pushReplacement(
@@ -362,6 +366,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           "complement": _complementController.text,
           "zipCode": _zipCodeController.text,
           "email": email,
+          "role": "Operador", // Valor padrão para o campo "role"
         };
 
         // Envia os dados para o Firebase Realtime Database
@@ -375,9 +380,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (e) {
       showToast(message: "Erro ao criar usuário: $e");
     } finally {
-      setState(() {
-        _isSigningUp = false;
-      });
+      if (!mounted) return;
+setState(() {
+  _isSigningUp = false;
+});
     }
 }
   
@@ -584,10 +590,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
           label: 'Email',
         ),
         const SizedBox(height: 20),
-        _buildTextField(
+        _buildPasswordField(
           controller: _passwordController,
           label: 'Senha',
-          obscureText: true,
+          isPasswordVisible: _isPasswordVisible,
+          onVisibilityToggle: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
         ),
         const SizedBox(height: 8),
         const Text(
@@ -598,10 +609,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildTextField(
+        _buildPasswordField(
           controller: _confirmPasswordController,
           label: 'Confirme a Senha',
-          obscureText: true,
+          isPasswordVisible: _isConfirmPasswordVisible,
+          onVisibilityToggle: () {
+            setState(() {
+              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+            });
+          },
         ),
       ],
     ),
@@ -650,6 +666,59 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         obscureText: obscureText,
+      ),
+    ],
+  );
+}
+
+  Widget _buildPasswordField({
+  required TextEditingController controller,
+  required String label,
+  required bool isPasswordVisible,
+  required VoidCallback onVisibilityToggle,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white, // Título em branco
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: controller,
+        obscureText: !isPasswordVisible, // Controla a visibilidade da senha
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          color: Colors.white, // Texto em branco
+        ),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.1), // Fundo semitransparente
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white), // Borda branca
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white), // Borda branca
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.white, width: 2), // Borda branca ao focar
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white70, // Ícone em branco com opacidade
+            ),
+            onPressed: onVisibilityToggle, // Alterna a visibilidade
+          ),
+        ),
       ),
     ],
   );

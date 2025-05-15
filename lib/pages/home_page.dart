@@ -136,20 +136,44 @@ Widget build(BuildContext context) {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ADMIN',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Cargo: Administrador',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
+                    FutureBuilder<Map<String, dynamic>?>(
+                      future: fetchUserData(FirebaseAuth.instance.currentUser!.uid),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const CircularProgressIndicator(color: Colors.white);
+                        }
+                        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                          return Text(
+                            'Usuário',
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        }
+                        final userData = snapshot.data!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              userData['firstName'] ?? 'Usuário',
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Cargo: ${userData['role'] ?? 'Operador'}',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
