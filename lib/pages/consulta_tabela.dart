@@ -47,14 +47,15 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   }
 
   void _syncWithFirestore() async {
-    List<Map<String, dynamic>> hiveItems = _plantBox.values.toList().cast<Map<String, dynamic>>();
+    List hiveItems = _plantBox.values.toList();
 
     for (var item in hiveItems) {
       try {
-        DocumentReference docRef = FirebaseFirestore.instance.collection('plants').doc(item['ID']);
+        final mapItem = Map<String, dynamic>.from(item as Map);
+        DocumentReference docRef = FirebaseFirestore.instance.collection('plants').doc(mapItem['ID']);
         DocumentSnapshot snapshot = await docRef.get();
         if (!snapshot.exists) {
-          await _plantBox.put(docRef.id, item);
+          await _plantBox.put(docRef.id, mapItem);
         }
       } catch (e) {
         print("Erro ao enviar item para o Firebase: $e");
@@ -230,26 +231,50 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                final updatedPlant = {
+                  "ID": plant["ID"],
+                  "Data": dateController.text,
+                  "Pasto": pastureController.text,
+                  "Espécie": speciesController.text,
+                  "Quantidade": int.tryParse(quantityController.text) ?? 0,
+                  "Condição da Área": condicaoAreaController.text,
+                  "Cultura": cultureController.text,
+                  "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
+                  "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
+                };
+
                 setState(() {
-                  _filteredPlants[index] = {
-                    "ID": plant["ID"],
-                    "Data": dateController.text,
-                    "Pasto": pastureController.text,
-                    "Espécie": speciesController.text,
-                    "Quantidade": int.tryParse(quantityController.text) ?? 0,
-                    "Condição da Área": condicaoAreaController.text,
-                    "Cultura": cultureController.text,
-                    "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
-                    "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
-                  };
-                  _plantBox.put(plant["ID"], _filteredPlants[index]);
+                  // Atualiza nas duas listas pelo ID
+                  _plants = _plants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
+                  _filteredPlants = _filteredPlants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
+                  _plantBox.put(updatedPlant["ID"], updatedPlant);
                 });
+
+                // Atualize também no Firestore
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('plants')
+                      .doc(plant["ID"])
+                      .update({
+                    "date": dateController.text,
+                    "pasture": pastureController.text,
+                    "species": speciesController.text,
+                    "quantity": int.tryParse(quantityController.text) ?? 0,
+                    "condicaoArea": condicaoAreaController.text,
+                    "culture": cultureController.text,
+                    "fresh_weight": double.tryParse(freshWeightController.text) ?? 0.0,
+                    "dry_weight": double.tryParse(dryWeightController.text) ?? 0.0,
+                  });
+                } catch (e) {
+                  _showSnackbar("Erro ao atualizar no Firestore: $e");
+                }
+
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF388E3C), // Verde escuro
-                foregroundColor: Colors.white, // Texto branco
+                backgroundColor: const Color(0xFF388E3C),
+                foregroundColor: Colors.white,
               ),
               child: const Text('Salvar'),
             ),
@@ -262,10 +287,18 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4B8B3B), // Fundo verde
+      backgroundColor: const Color(0xFF388E3C),
       appBar: AppBar(
-        title: const Text('Consultar Plantas'),
-        backgroundColor: const Color(0xFF388E3C), // Verde escuro
+        title: const Text(
+          'Consultar Plantas',
+          style: TextStyle(
+            color: Colors.white, // Título branco
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF388E3C), 
+        iconTheme: const IconThemeData(color: Colors.white), 
+        foregroundColor: Colors.white, 
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -373,21 +406,43 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black, // Texto preto
+                          color: Colors.black,
                         ),
                       ),
                       subtitle: Text(
                         date,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black54, // Texto cinza escuro
+                          color: Colors.black54,
                         ),
                       ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.black),
-                        onPressed: () {
-                          _editItem(index); // Chama o método _editItem ao clicar no botão
-                        },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.black),
+                            onPressed: () {
+                              _editItem(index);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final plant = _filteredPlants[index];
+                              final id = plant["ID"];
+                              // Remove do Hive
+                              await _plantBox.delete(id);
+                              // Remove do Firestore
+                              await FirebaseFirestore.instance.collection('plants').doc(id).delete();
+                              // Remove das duas listas pelo ID
+                              setState(() {
+                                _plants.removeWhere((p) => p["ID"] == id);
+                                _filteredPlants.removeWhere((p) => p["ID"] == id);
+                              });
+                              _showSnackbar("Planta removida com sucesso!");
+                            },
+                          ),
+                        ],
                       ),
                     );
                   },

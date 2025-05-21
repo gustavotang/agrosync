@@ -7,6 +7,7 @@ import 'consulta_tabela.dart';
 import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrosync/models/toast.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 class RegistroPlanta extends StatefulWidget {
   final Plant planta;
@@ -27,7 +28,91 @@ class _RegistroState extends State<RegistroPlanta> {
   final TextEditingController _freshWeightController = TextEditingController();
   final TextEditingController _dryWeightController = TextEditingController();
 
+  // Máscaras
+  final dateMask = MaskTextInputFormatter(mask: '##/##/####', filter: {"#": RegExp(r'[0-9]')});
+  final quantityMask = MaskTextInputFormatter(mask: '#####', filter: {"#": RegExp(r'[0-9]')});
+  final weightMask = MaskTextInputFormatter(mask: '######.##', filter: {"#": RegExp(r'[0-9]')});
+  final textMask = MaskTextInputFormatter(mask: 'A'*55, filter: {"A": RegExp(r'[a-zA-ZáéíóúãõâêîôûçÁÉÍÓÚÃÕÂÊÎÔÛÇ ]')});
+
   var _plantBox = Hive.box('plant_box');
+
+  // Lista de espécies sem duplicidade e formatada
+  final List<String> _speciesList = [
+    "Mentrasto",
+    "Caruru",
+    "Picão",
+    "Capim Braquiária",
+    "Capim Marmelada",
+    "Capim Carrapicho",
+    "Trapoeraba",
+    "Tiririca",
+    "Leiteiro",
+    "Erva de Santa Luzia",
+    "Cordão de Frade",
+    "Joá de Capote",
+    "Capim Mombaça",
+    "Beldroega",
+    "Poaia",
+    "Guanxuma",
+    "Erva de Touro",
+    "Fedegoso",
+    "Capim Guiné",
+    "Corda de Viola",
+    "Buva",
+    "Assa-peixe",
+    "Sorgo Selvagem",
+    "Erva Moura",
+    "Serralha",
+    "Apaga-fogo",
+    "Carrapicho de Carneiro",
+    "Vassoura de Bruxa",
+    "Vassoura Rabo de Tatu",
+    "Capim Colchão",
+    "Capim Amargoso",
+    "Soja Perene",
+    "Losna Branca",
+    "Mamona",
+    "Malva Preta",
+    "Carrapicho Rasteiro",
+    "Capim Custodio",
+    "Grama Seda",
+    "Malva Branca",
+    "Sida Rombi",
+    "Sida Glaziovi",
+    "Sidastrum",
+    "Malvastrum",
+    "Sida Spinosa",
+    "Sida Cordifolia",
+    "Cabreuva",
+    "Lobeira",
+    "Sida Id",
+    "Xhantium Stra",
+    "Angiquinho",
+    "Capim Favorito",
+    "Timbete",
+    "Chic-chic",
+    "Crucifera",
+    "Identificas",
+    "Botão de Ouro",
+    "Quevra Preta",
+    "Macela",
+  ].toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  // Lista de culturas sem duplicidade e formatada
+  final List<String> _cultureList = [
+    "Soja",
+    "Milho",
+    "Pasto/Soja",
+    "Sorgo/Pasto",
+    "Soja/Milho",
+    "Milho/Sorgo",
+    "Pasto",
+    "Sorgo",
+    "Milho/Pasto",
+    "Pasto/Pasto",
+  ].toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
   @override
   void initState() {
@@ -55,6 +140,7 @@ class _RegistroState extends State<RegistroPlanta> {
                 hint: 'DD/MM/AAAA',
                 keyboardType: TextInputType.datetime,
                 validator: _isEmptyValidator,
+                maskFormatter: dateMask,
               ),
               // Troca o campo de texto de Pasto por um DropdownButtonFormField
               Padding(
@@ -100,19 +186,56 @@ class _RegistroState extends State<RegistroPlanta> {
                   ],
                 ),
               ),
-              _buildTextField(
-                label: 'Nome da espécie',
-                controller: _speciesController,
-                hint: 'Digite o nome da espécie',
-                keyboardType: TextInputType.text,
-                validator: _validateCustomString,
+              // Novo campo de seleção para a espécie
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Nome da espécie',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _speciesController.text.isNotEmpty ? _speciesController.text : null,
+                      items: _speciesList
+                          .map((e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(e),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _speciesController.text = value ?? '';
+                        });
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: 'Selecione a espécie',
+                        hintStyle: const TextStyle(color: Colors.black54),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Selecione a espécie.' : null,
+                    ),
+                  ],
+                ),
               ),
               _buildTextField(
                 label: 'Quantidade',
                 controller: _quantityController,
-                hint: 'Digite a quantidade',
+                hint: 'Digite a quantidade (Ex: 5)',
                 keyboardType: TextInputType.number,
                 validator: _quantityValidator,
+                maskFormatter: quantityMask,
               ),
               // Campo de seleção para a condição do solo
               Padding(
@@ -157,26 +280,64 @@ class _RegistroState extends State<RegistroPlanta> {
                   ],
                 ),
               ),
-              _buildTextField(
-                label: 'Cultura',
-                controller: _cultureController,
-                hint: 'Digite a cultura',
-                keyboardType: TextInputType.text,
-                validator: _validateCustomString,
+              // Campo de seleção para a cultura
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cultura',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _cultureController.text.isNotEmpty ? _cultureController.text : null,
+                      items: _cultureList
+                          .map((e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(e),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _cultureController.text = value ?? '';
+                        });
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: 'Selecione a cultura',
+                        hintStyle: const TextStyle(color: Colors.black54),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Selecione a cultura.' : null,
+                    ),
+                  ],
+                ),
               ),
               _buildTextField(
                 label: 'Peso Verde (g)',
                 controller: _freshWeightController,
-                hint: 'Digite o peso verde',
+                hint: 'Ex: 345.67',
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 validator: _optionalWeightValidator,
+                maskFormatter: weightMask,
               ),
               _buildTextField(
                 label: 'Peso Seco (g)',
                 controller: _dryWeightController,
-                hint: 'Digite o peso seco',
+                hint: 'Ex: 145.67',
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 validator: _optionalWeightValidator,
+                maskFormatter: weightMask,
               ),
               const SizedBox(height: 16),
               Row(
@@ -232,6 +393,7 @@ class _RegistroState extends State<RegistroPlanta> {
     required String hint,
     required TextInputType keyboardType,
     required String? Function(String?) validator,
+    MaskTextInputFormatter? maskFormatter,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -243,18 +405,19 @@ class _RegistroState extends State<RegistroPlanta> {
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               fontSize: 20,
-              color: Colors.white, // Labels em branco
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
+            inputFormatters: maskFormatter != null ? [maskFormatter] : [],
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Colors.black54),
               filled: true,
-              fillColor: Colors.white, // Preenchimento branco
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
