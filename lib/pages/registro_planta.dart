@@ -114,12 +114,48 @@ class _RegistroState extends State<RegistroPlanta> {
                 keyboardType: TextInputType.number,
                 validator: _quantityValidator,
               ),
-              _buildTextField(
-                label: 'Condição do Solo',
-                controller: _conditionController,
-                hint: 'Digite a condição do solo',
-                keyboardType: TextInputType.text,
-                validator: _isEmptyValidator,
+              // Campo de seleção para a condição do solo
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Condição do Solo',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _conditionController.text.isNotEmpty ? _conditionController.text : null,
+                      items: const [
+                        DropdownMenuItem(value: 'Entre-safra', child: Text('Entre-safra')),
+                        DropdownMenuItem(value: 'Na colheita', child: Text('Na colheita')),
+                        DropdownMenuItem(value: 'Na lavoura', child: Text('Na lavoura')),
+                        DropdownMenuItem(value: 'Pré-dessecação', child: Text('Pré-dessecação')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _conditionController.text = value ?? '';
+                        });
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        hintText: 'Selecione a condição do solo',
+                        hintStyle: const TextStyle(color: Colors.black54),
+                      ),
+                      validator: (value) => value == null || value.isEmpty ? 'Selecione a condição do solo.' : null,
+                    ),
+                  ],
+                ),
               ),
               _buildTextField(
                 label: 'Cultura',
