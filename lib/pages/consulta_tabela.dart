@@ -1,12 +1,16 @@
 import 'package:agrosync/models/plant.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'registro_planta.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:agrosync/models/toast.dart';
 import 'home_page.dart';
+import 'package:flutter/services.dart'; // Adicione este import no topo do arquivo
+
+final dateMask = MaskTextInputFormatter(mask: '##/##/####', filter: {"#": RegExp(r'[0-9]')});
 
 class ConsultaTabela extends StatefulWidget {
   const ConsultaTabela({super.key});
@@ -22,6 +26,31 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
 
+  final TextEditingController _filterDateController = TextEditingController();
+  final TextEditingController _filterPastureController = TextEditingController();
+  final TextEditingController _filterSpeciesController = TextEditingController();
+  final TextEditingController _filterCondicaoAreaController = TextEditingController();
+  final TextEditingController _filterCultureController = TextEditingController();
+
+  final List<String> _speciesList = [
+    "Mentrasto", "Caruru", "Picão", "Capim Braquiária", "Capim Marmelada", "Capim Carrapicho", "Trapoeraba", "Tiririca",
+    "Leiteiro", "Erva de Santa Luzia", "Cordão de Frade", "Joá de Capote", "Capim Mombaça", "Beldroega", "Poaia",
+    "Guanxuma", "Erva de Touro", "Fedegoso", "Capim Guiné", "Corda de Viola", "Buva", "Assa-peixe", "Sorgo Selvagem",
+    "Erva Moura", "Serralha", "Apaga-fogo", "Carrapicho de Carneiro", "Vassoura de Bruxa", "Vassoura Rabo de Tatu",
+    "Capim Colchão", "Capim Amargoso", "Soja Perene", "Losna Branca", "Mamona", "Malva Preta", "Carrapicho Rasteiro",
+    "Capim Custodio", "Grama Seda", "Malva Branca", "Sida Rombi", "Sida Glaziovi", "Sidastrum", "Malvastrum",
+    "Sida Spinosa", "Sida Cordifolia", "Cabreuva", "Lobeira", "Sida Id", "Xhantium Stra", "Angiquinho", "Capim Favorito",
+    "Timbete", "Chic-chic", "Crucifera", "Identificas", "Botão de Ouro", "Quevra Preta", "Macela",
+  ]..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  final List<String> _cultureList = [
+    "Soja", "Milho", "Pasto/Soja", "Sorgo/Pasto", "Soja/Milho", "Milho/Sorgo", "Pasto", "Sorgo", "Milho/Pasto", "Pasto/Pasto",
+  ]..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+  final List<String> _conditionList = [
+    'Entre-safra', 'Na colheita', 'Na lavoura', 'Pré-dessecação'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -34,33 +63,31 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   }
 
   void _filterPlants() {
-    final query = _searchController.text.toLowerCase();
-
     setState(() {
       _filteredPlants = _plants.where((plant) {
-        return plant['Espécie'].toLowerCase().contains(query) || // Alterado de "Nome" para "Espécie"
-            plant['Pasto'].toLowerCase().contains(query) ||
-            plant['Cultura'].toLowerCase().contains(query) ||
-            plant['Data'].toLowerCase().contains(query);
+        final matchesDate = _filterDateController.text.isEmpty ||
+            (plant['Data']?.toLowerCase().contains(_filterDateController.text.toLowerCase()) ?? false);
+        final matchesPasture = _filterPastureController.text.isEmpty ||
+            (plant['Pasto']?.toLowerCase().contains(_filterPastureController.text.toLowerCase()) ?? false);
+        final matchesSpecies = _filterSpeciesController.text.isEmpty ||
+            (plant['Espécie']?.toLowerCase().contains(_filterSpeciesController.text.toLowerCase()) ?? false);
+        final matchesCondicao = _filterCondicaoAreaController.text.isEmpty ||
+            (plant['Condição da Área']?.toLowerCase().contains(_filterCondicaoAreaController.text.toLowerCase()) ?? false);
+        final matchesCulture = _filterCultureController.text.isEmpty ||
+            (plant['Cultura']?.toLowerCase().contains(_filterCultureController.text.toLowerCase()) ?? false);
+
+        return matchesDate && matchesPasture && matchesSpecies && matchesCondicao && matchesCulture;
       }).toList();
     });
   }
 
   void _syncWithFirestore() async {
-    List hiveItems = _plantBox.values.toList();
-
-    for (var item in hiveItems) {
-      try {
-        final mapItem = Map<String, dynamic>.from(item as Map);
-        DocumentReference docRef = FirebaseFirestore.instance.collection('plants').doc(mapItem['ID']);
-        DocumentSnapshot snapshot = await docRef.get();
-        if (!snapshot.exists) {
-          await _plantBox.put(docRef.id, mapItem);
-        }
-      } catch (e) {
-        print("Erro ao enviar item para o Firebase: $e");
-      }
+    final snapshot = await FirebaseFirestore.instance.collection('plants').get();
+    for (var doc in snapshot.docs) {
+      final data = firestoreToHive(doc.data(), doc.id);
+      await _plantBox.put(doc.id, data);
     }
+    _refreshItems();
   }
 
   void _refreshItems() {
@@ -68,14 +95,14 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       final item = _plantBox.get(key);
       return {
         "ID": key,
-        "Espécie": item["species"], // Alterado de "Nome" para "Espécie"
-        "Pasto": item["pasture"],
-        "Cultura": item["culture"],
-        "Condição da Área": item["condicaoArea"],
-        "Quantidade": item["quantity"],
-        "Data": item["date"],
-        "Peso Verde": item["fresh_weight"],
-        "Peso Seco": item["dry_weight"],
+        "Espécie": item["Espécie"],
+        "Pasto": item["Pasto"],
+        "Cultura": item["Cultura"],
+        "Condição da Área": item["Condição da Área"],
+        "Quantidade": item["Quantidade"],
+        "Data": item["Data"],
+        "Peso Verde": item["Peso Verde"],
+        "Peso Seco": item["Peso Seco"],
       };
     }).toList();
 
@@ -87,6 +114,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
 
   void _editItem(int index) {
     final plant = _filteredPlants[index];
+    final _formKey = GlobalKey<FormState>();
+
     final TextEditingController dateController =
         TextEditingController(text: plant['Data']);
     final TextEditingController pastureController =
@@ -108,115 +137,144 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF4B8B3B), // Fundo verde
+          backgroundColor: const Color(0xFF4B8B3B),
           title: const Text(
             'Editar planta',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white, // Texto branco
+              color: Colors.white,
             ),
           ),
           content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTextField(
-                  label: 'Data',
-                  controller: dateController,
-                  hint: 'DD/MM/AAAA',
-                  keyboardType: TextInputType.datetime,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'A data é obrigatória';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Pasto',
-                  controller: pastureController,
-                  hint: 'Digite o pasto',
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'O pasto é obrigatório';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Nome da espécie',
-                  controller: speciesController,
-                  hint: 'Digite o nome da espécie',
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'O nome da espécie é obrigatório';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Quantidade',
-                  controller: quantityController,
-                  hint: 'Digite a quantidade',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'A quantidade é obrigatória';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Condição da Área',
-                  controller: condicaoAreaController,
-                  hint: 'Digite a condição da área',
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'A condição da área é obrigatória';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Cultura',
-                  controller: cultureController,
-                  hint: 'Digite a cultura',
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'A cultura é obrigatória';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Peso Verde (g)',
-                  controller: freshWeightController,
-                  hint: 'Digite o peso verde',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'O peso verde é obrigatório';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  label: 'Peso Seco (g)',
-                  controller: dryWeightController,
-                  hint: 'Digite o peso seco',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'O peso seco é obrigatório';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTextField(
+                    label: 'Data',
+                    controller: dateController,
+                    hint: 'DD/MM/AAAA',
+                    keyboardType: TextInputType.datetime,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'A data é obrigatória';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildDropdownField(
+                    label: 'Pasto',
+                    controller: pastureController,
+                    items: List.generate(4, (index) {
+                      final value = (index + 1).toString();
+                      return DropdownMenuItem(
+                        value: value,
+                        child: Text('Pasto $value'),
+                      );
+                    }),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'O pasto é obrigatório';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildDropdownField(
+                    label: 'Nome da espécie',
+                    controller: speciesController,
+                    items: _speciesList
+                        .map((e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e),
+                            ))
+                        .toList(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'O nome da espécie é obrigatório';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildTextField(
+                    label: 'Quantidade',
+                    controller: quantityController,
+                    hint: 'Digite a quantidade',
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'A quantidade é obrigatória';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Digite um número válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildDropdownField(
+                    label: 'Condição da Área',
+                    controller: condicaoAreaController,
+                    items: _conditionList
+                        .map((e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e),
+                            ))
+                        .toList(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'A condição da área é obrigatória';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildDropdownField(
+                    label: 'Cultura',
+                    controller: cultureController,
+                    items: _cultureList
+                        .map((e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e),
+                            ))
+                        .toList(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'A cultura é obrigatória';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildTextField(
+                    label: 'Peso Verde (g)',
+                    controller: freshWeightController,
+                    hint: 'Digite o peso verde',
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'O peso verde é obrigatório';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Digite um número válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildTextField(
+                    label: 'Peso Seco (g)',
+                    controller: dryWeightController,
+                    hint: 'Digite o peso seco',
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'O peso seco é obrigatório';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Digite um número válido';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -225,52 +283,41 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                 Navigator.pop(context);
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.black, // Texto preto
-                backgroundColor: Colors.white, // Fundo branco
+                foregroundColor: Colors.black,
+                backgroundColor: Colors.white,
               ),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
               onPressed: () async {
-                final updatedPlant = {
-                  "ID": plant["ID"],
-                  "Data": dateController.text,
-                  "Pasto": pastureController.text,
-                  "Espécie": speciesController.text,
-                  "Quantidade": int.tryParse(quantityController.text) ?? 0,
-                  "Condição da Área": condicaoAreaController.text,
-                  "Cultura": cultureController.text,
-                  "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
-                  "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
-                };
+                if (_formKey.currentState!.validate()) {
+                  final updatedPlant = {
+                    "ID": plant["ID"],
+                    "Data": dateController.text,
+                    "Pasto": pastureController.text,
+                    "Espécie": speciesController.text,
+                    "Quantidade": int.tryParse(quantityController.text) ?? 0,
+                    "Condição da Área": condicaoAreaController.text,
+                    "Cultura": cultureController.text,
+                    "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
+                    "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
+                  };
 
-                setState(() {
-                  // Atualiza nas duas listas pelo ID
-                  _plants = _plants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
-                  _filteredPlants = _filteredPlants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
-                  _plantBox.put(updatedPlant["ID"], updatedPlant);
-                });
-
-                // Atualize também no Firestore
-                try {
-                  await FirebaseFirestore.instance
-                      .collection('plants')
-                      .doc(plant["ID"])
-                      .update({
-                    "date": dateController.text,
-                    "pasture": pastureController.text,
-                    "species": speciesController.text,
-                    "quantity": int.tryParse(quantityController.text) ?? 0,
-                    "condicaoArea": condicaoAreaController.text,
-                    "culture": cultureController.text,
-                    "fresh_weight": double.tryParse(freshWeightController.text) ?? 0.0,
-                    "dry_weight": double.tryParse(dryWeightController.text) ?? 0.0,
+                  setState(() {
+                    _plants = _plants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
+                    _filteredPlants = _filteredPlants.map((p) => p["ID"] == updatedPlant["ID"] ? updatedPlant : p).toList();
+                    _plantBox.put(updatedPlant["ID"], updatedPlant);
                   });
-                } catch (e) {
-                  _showSnackbar("Erro ao atualizar no Firestore: $e");
-                }
 
-                Navigator.pop(context);
+                  try {
+                    final data = hiveToFirestore(updatedPlant);
+                    await FirebaseFirestore.instance.collection('plants').doc(updatedPlant["ID"]).set(data);
+                  } catch (e) {
+                    _showSnackbar("Erro ao atualizar no Firestore: $e");
+                  }
+
+                  Navigator.pop(context);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF388E3C),
@@ -299,6 +346,16 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
         backgroundColor: const Color(0xFF388E3C), 
         iconTheme: const IconThemeData(color: Colors.white), 
         foregroundColor: Colors.white, 
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Atualizar',
+            onPressed: () async {
+              _syncWithFirestore();
+              _showSnackbar("Lista atualizada!");
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -308,37 +365,55 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             // Campos de entrada
             _buildTextField(
               label: 'Data',
-              controller: TextEditingController(),
+              controller: _filterDateController,
               hint: 'DD/MM/AAAA',
               keyboardType: TextInputType.datetime,
               validator: (value) => null,
+              inputFormatters: [dateMask], // <-- Adicione esta linha
             ),
-            _buildTextField(
+            _buildDropdownField(
               label: 'Pasto',
-              controller: TextEditingController(),
-              hint: 'Digite o pasto',
-              keyboardType: TextInputType.text,
+              controller: _filterPastureController,
+              items: List.generate(4, (index) {
+                final value = (index + 1).toString();
+                return DropdownMenuItem(
+                  value: value,
+                  child: Text('Pasto $value'),
+                );
+              }),
               validator: (value) => null,
             ),
-            _buildTextField(
+            _buildDropdownField(
               label: 'Nome da espécie',
-              controller: TextEditingController(),
-              hint: 'Digite o nome da espécie',
-              keyboardType: TextInputType.text,
+              controller: _filterSpeciesController,
+              items: _speciesList
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e),
+                      ))
+                  .toList(),
               validator: (value) => null,
             ),
-            _buildTextField(
-              label: 'Condição da Área',
-              controller: TextEditingController(),
-              hint: 'Digite a condição da área',
-              keyboardType: TextInputType.text,
+            _buildDropdownField(
+              label: 'Condição do Solo',
+              controller: _filterCondicaoAreaController,
+              items: _conditionList
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e),
+                      ))
+                  .toList(),
               validator: (value) => null,
             ),
-            _buildTextField(
+            _buildDropdownField(
               label: 'Cultura',
-              controller: TextEditingController(),
-              hint: 'Digite a cultura',
-              keyboardType: TextInputType.text,
+              controller: _filterCultureController,
+              items: _cultureList
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e),
+                      ))
+                  .toList(),
               validator: (value) => null,
             ),
             const SizedBox(height: 16),
@@ -349,14 +424,20 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      _filterDateController.clear();
+                      _filterPastureController.clear();
+                      _filterSpeciesController.clear();
+                      _filterCondicaoAreaController.clear();
+                      _filterCultureController.clear();
+                      setState(() {});
+                      _filterPlants();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white, // Fundo branco
-                      foregroundColor: Colors.black, // Texto preto
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Cancelar'),
+                    child: const Text('Limpar filtros'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -366,8 +447,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                       _filterPlants();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black, // Fundo preto
-                      foregroundColor: Colors.white, // Texto branco
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text('Procurar'),
@@ -379,7 +460,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
 
             // Título da lista
             const Text(
-              'Recente',
+              'Resultado',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -430,11 +511,21 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                             onPressed: () async {
                               final plant = _filteredPlants[index];
                               final id = plant["ID"];
+                              print("Tentando deletar planta com ID: $id");
+
                               // Remove do Hive
                               await _plantBox.delete(id);
+
                               // Remove do Firestore
-                              await FirebaseFirestore.instance.collection('plants').doc(id).delete();
-                              // Remove das duas listas pelo ID
+                              try {
+                                await FirebaseFirestore.instance.collection('plants').doc(id).delete();
+                                print("Deletado do Firestore: $id");
+                              } catch (e) {
+                                print("Erro ao deletar do Firestore: $e");
+                                _showSnackbar("Erro ao deletar do Firestore: $e");
+                              }
+
+                              // Remove das listas
                               setState(() {
                                 _plants.removeWhere((p) => p["ID"] == id);
                                 _filteredPlants.removeWhere((p) => p["ID"] == id);
@@ -461,6 +552,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
     required String hint,
     required TextInputType keyboardType,
     required String? Function(String?) validator,
+    List<TextInputFormatter>? inputFormatters, // <-- Adicione este parâmetro opcional
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -479,6 +571,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters, // <-- Use aqui
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Colors.black54),
@@ -497,7 +590,86 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
     );
   }
 
+  Widget _buildDropdownField({
+    required String label,
+    required TextEditingController controller,
+    required List<DropdownMenuItem<String>> items,
+    required String? Function(String?) validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: getDropdownValue(controller, items),
+            items: items,
+            onChanged: (value) {
+              setState(() {
+                controller.text = value ?? '';
+              });
+            },
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              hintText: 'Selecione uma opção',
+              hintStyle: const TextStyle(color: Colors.black54),
+            ),
+            validator: validator,
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSnackbar(String message) {
     showToast(message: message);
+  }
+
+  Map<String, dynamic> hiveToFirestore(Map<String, dynamic> hiveData) {
+    return {
+      "date": hiveData["Data"],
+      "pasture": hiveData["Pasto"],
+      "species": hiveData["Espécie"],
+      "quantity": hiveData["Quantidade"],
+      "condicaoArea": hiveData["Condição da Área"],
+      "culture": hiveData["Cultura"],
+      "fresh_weight": hiveData["Peso Verde"],
+      "dry_weight": hiveData["Peso Seco"],
+    };
+  }
+
+  Map<String, dynamic> firestoreToHive(Map<String, dynamic> firestoreData, String id) {
+    return {
+      "ID": id,
+      "Data": firestoreData["date"],
+      "Pasto": firestoreData["pasture"],
+      "Espécie": firestoreData["species"],
+      "Quantidade": firestoreData["quantity"],
+      "Condição da Área": firestoreData["condicaoArea"],
+      "Cultura": firestoreData["culture"],
+      "Peso Verde": firestoreData["fresh_weight"],
+      "Peso Seco": firestoreData["dry_weight"],
+    };
+  }
+
+  String? getDropdownValue(TextEditingController controller, List<DropdownMenuItem<String>> items) {
+    final value = controller.text;
+    if (value.isEmpty) return null;
+    final exists = items.any((item) => item.value == value);
+    return exists ? value : null;
   }
 }
