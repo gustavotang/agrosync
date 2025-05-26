@@ -6,6 +6,7 @@ import 'home_page.dart';
 import 'package:agrosync/firebase_auth_implementation/firebase_auth_services.dart';
 import 'package:agrosync/models/toast.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -392,69 +393,72 @@ setState(() {
     return Scaffold(
       appBar: AppBar(
       backgroundColor: const Color(0xFF4B8B3B),
-      elevation: 0, 
-      toolbarHeight: 50, 
+      elevation: 0,
+      toolbarHeight: 50,
     ),
       backgroundColor: const Color(0xFF4B8B3B),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              children: [
-                _buildFirstPage(),
-                _buildSecondPage(),
-                _buildThirdPage(),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                children: [
+                  // Adicione SingleChildScrollView em cada página
+                  SingleChildScrollView(child: _buildFirstPage()),
+                  SingleChildScrollView(child: _buildSecondPage()),
+                  SingleChildScrollView(child: _buildThirdPage()),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentPage > 0)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentPage > 0)
+                    ElevatedButton(
+                      onPressed: _previousPage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        textStyle: GoogleFonts.inter(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Voltar'),
+                    ),
                   ElevatedButton(
-                    onPressed: _previousPage,
+                    onPressed: _nextPage,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white, // Fundo branco
-                      foregroundColor: Colors.black, // Texto preto
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
                       textStyle: GoogleFonts.inter(
-                        fontSize: 22, // Texto maior
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40), // Botão maior
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), // Bordas levemente arredondadas
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Voltar'),
+                    child: Text(_currentPage < 2 ? 'Próximo' : 'Finalizar'),
                   ),
-                ElevatedButton(
-                  onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black, 
-                    foregroundColor: Colors.white, 
-                    textStyle: GoogleFonts.inter(
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40), 
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), 
-                    ),
-                  ),
-                  child: Text(_currentPage < 2 ? 'Próximo' : 'Finalizar'),
-                ),
-              ],
-            ),
-          )
-        ],
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -554,6 +558,8 @@ setState(() {
         _buildTextField(
           controller: _numberController,
           label: 'Número',
+          keyboardType: TextInputType.number, // Apenas números
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Apenas números
         ),
         const SizedBox(height: 20),
         _buildTextField(
@@ -628,7 +634,9 @@ setState(() {
   required TextEditingController controller,
   required String label,
   bool obscureText = false,
-  MaskTextInputFormatter? maskFormatter, // Adicionado para máscaras
+  MaskTextInputFormatter? maskFormatter,
+  TextInputType? keyboardType,
+  List<TextInputFormatter>? inputFormatters,
 }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,7 +646,7 @@ setState(() {
         style: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.white, // Título em branco
+          color: Colors.white,
         ),
       ),
       const SizedBox(height: 8),
@@ -646,23 +654,25 @@ setState(() {
         controller: controller,
         style: GoogleFonts.inter(
           fontSize: 18,
-          color: Colors.white, // Texto em branco
+          color: Colors.white,
         ),
-        inputFormatters: maskFormatter != null ? [maskFormatter] : [], // Aplicar máscara
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters ??
+            (maskFormatter != null ? [maskFormatter] : []),
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white.withOpacity(0.1), // Fundo semitransparente
+          fillColor: Colors.white.withOpacity(0.1),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.white), // Borda branca
+            borderSide: const BorderSide(color: Colors.white),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.white), // Borda branca
+            borderSide: const BorderSide(color: Colors.white),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.white, width: 2), // Borda branca ao focar
+            borderSide: const BorderSide(color: Colors.white, width: 2),
           ),
         ),
         obscureText: obscureText,

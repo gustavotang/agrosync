@@ -10,7 +10,7 @@ import 'package:hive/hive.dart';
 import 'creditos.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:fl_chart/fl_chart.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -103,6 +103,117 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Adicionei a função para contar plantas por pasto
+  Map<String, int> _countPlantsByPasture(List<Map<String, dynamic>> plants) {
+    final Map<String, int> count = {};
+    for (var plant in plants) {
+      // Troque 'Pasto' por 'pasture'
+      final pasture = plant['pasture'] ?? plant['Pasto'] ?? 'Desconhecido';
+      count[pasture] = (count[pasture] ?? 0) + 1;
+    }
+    return count;
+  }
+
+  // Widget do dashboard com gráfico e total de plantas
+  Widget _buildDashboardWithChart(BuildContext context, FirebaseFirestore firestore) {
+    return FutureBuilder(
+      future: firestore.collection('plants').get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Text('Erro ao carregar dados', style: TextStyle(color: Colors.white));
+        }
+        final docs = (snapshot.data as QuerySnapshot).docs;
+        final plants = docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+        final total = plants.length;
+        final data = _countPlantsByPasture(plants);
+        final keys = data.keys.toList();
+
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: const Color(0xFF388E3C),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Plantas registradas por pasto',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 180,
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    barGroups: List.generate(keys.length, (index) {
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: data[keys[index]]!.toDouble(),
+                            color: Colors.white,
+                            width: 18,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ],
+                      );
+                    }),
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final idx = value.toInt();
+                            if (idx >= 0 && idx < keys.length) {
+                              // Exibe "Pasto <nome>" como label
+                              return Text(
+                                'Pasto ${keys[idx]}',
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          getTitlesWidget: (value, meta) => Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(color: Colors.white, fontSize: 10),
+                          ),
+                        ),
+                      ),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: false),
+                    barTouchData: BarTouchData(enabled: false),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
 Widget build(BuildContext context) {
   return Scaffold(
@@ -174,8 +285,11 @@ Widget build(BuildContext context) {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
+          //Grafico
+          _buildDashboardWithChart(context, _firestore),
+          
           // Dashboard com métricas do Firebase
           Container(
             padding: const EdgeInsets.all(16.0),
@@ -205,7 +319,7 @@ Widget build(BuildContext context) {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Grid com os botões
           Expanded(
