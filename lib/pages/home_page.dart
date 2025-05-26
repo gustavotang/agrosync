@@ -2,7 +2,7 @@ import 'package:agrosync/models/plant.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'registro_planta.dart';
 import 'consulta_tabela.dart';
 import 'adicionar_campo.dart';
@@ -59,12 +59,6 @@ class HomePage extends StatelessWidget {
   // Função para buscar o total de plantas registradas no Firestore
   Future<int> _getTotalPlants() async {
     final snapshot = await _firestore.collection('plants').get();
-    return snapshot.docs.length;
-  }
-
-  // Função para buscar o total de usuários cadastrados no Firestore
-  Future<int> _getTotalUsers() async {
-    final snapshot = await _firestore.collection('users').get();
     return snapshot.docs.length;
   }
 
@@ -196,10 +190,7 @@ Widget build(BuildContext context) {
                   title: 'Plantas Registradas',
                   futureValue: _getTotalPlants(),
                 ),
-                _buildDashboardCard(
-                  title: 'Usuários Cadastrados',
-                  futureValue: _getTotalUsers(),
-                ),
+                // Removido o card de "Usuários Cadastrados"
               ],
             ),
           ),

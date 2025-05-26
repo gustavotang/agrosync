@@ -354,18 +354,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (user != null) {
         // Dados do formulário
         Map<String, dynamic> userData = {
-          "firstName": _firstNameController.text,
-          "lastName": _lastNameController.text,
-          "cpf": _cpfController.text,
-          "phone": _phoneController.text,
-          "birthDate": _birthDateController.text,
-          "city": _cityController.text,
-          "state": _stateController.text,
-          "address": _addressController.text,
-          "number": _numberController.text,
-          "complement": _complementController.text,
-          "zipCode": _zipCodeController.text,
-          "email": email,
+          "firstName": _firstNameController.text.trim(),
+          "lastName": _lastNameController.text.trim(),
+          "cpf": _cpfController.text.trim(),
+          "phone": _phoneController.text.trim(),
+          "birthDate": _birthDateController.text.trim(),
+          "city": _cityController.text.trim(),
+          "state": _stateController.text.trim(),
+          "address": _addressController.text.trim(),
+          "number": _numberController.text.trim(),
+          "complement": _complementController.text.trim().isEmpty ? "" : _complementController.text.trim(),
+          "zipCode": _zipCodeController.text.trim(),
+          "email": email.trim(),
           "role": "Operador", // Valor padrão para o campo "role"
         };
 

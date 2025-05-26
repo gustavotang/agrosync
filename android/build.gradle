@@ -5,7 +5,7 @@ buildscript {
         // jcenter() // Descomente se algum plugin antigo precisar
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.4.0'
+        classpath 'com.android.tools.build:gradle:8.3.0'
     }
 }
 

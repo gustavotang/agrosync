@@ -346,10 +346,10 @@ packages:
     dependency: "direct main"
     description:
       name: firebase_data_connect
-      sha256: e9866cffa2e0e9a069481cb5729fa501a1461d72e8f310a12ad5b853e938b01e
+      sha256: "57a3b4cf46066febf5ea29f28f8d3ca6b499f709bf77c2884004d0fd15eed5b7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.1.5"
   firebase_database:
     dependency: "direct main"
     description:
@@ -561,10 +561,10 @@ packages:
     dependency: "direct main"
     description:
       name: intl
-      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
       url: "https://pub.dev"
     source: hosted
-    version: "0.20.2"
+    version: "0.19.0"
   io:
     dependency: transitive
     description:

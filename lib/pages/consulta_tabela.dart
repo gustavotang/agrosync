@@ -29,7 +29,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
   final TextEditingController _filterDateController = TextEditingController();
   final TextEditingController _filterPastureController = TextEditingController();
   final TextEditingController _filterSpeciesController = TextEditingController();
-  final TextEditingController _filterCondicaoAreaController = TextEditingController();
+  final TextEditingController _filterCondicaoSoloController = TextEditingController();
   final TextEditingController _filterCultureController = TextEditingController();
 
   final List<String> _speciesList = [
@@ -71,8 +71,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             (plant['Pasto']?.toLowerCase().contains(_filterPastureController.text.toLowerCase()) ?? false);
         final matchesSpecies = _filterSpeciesController.text.isEmpty ||
             (plant['Espécie']?.toLowerCase().contains(_filterSpeciesController.text.toLowerCase()) ?? false);
-        final matchesCondicao = _filterCondicaoAreaController.text.isEmpty ||
-            (plant['Condição da Área']?.toLowerCase().contains(_filterCondicaoAreaController.text.toLowerCase()) ?? false);
+        final matchesCondicao = _filterCondicaoSoloController.text.isEmpty ||
+            (plant['Condição do Solo']?.toLowerCase().contains(_filterCondicaoSoloController.text.toLowerCase()) ?? false);
         final matchesCulture = _filterCultureController.text.isEmpty ||
             (plant['Cultura']?.toLowerCase().contains(_filterCultureController.text.toLowerCase()) ?? false);
 
@@ -98,7 +98,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
         "Espécie": item["Espécie"],
         "Pasto": item["Pasto"],
         "Cultura": item["Cultura"],
-        "Condição da Área": item["Condição da Área"],
+        "Condição do Solo": item["Condição do Solo"] ?? item["Condição da Área"],
         "Quantidade": item["Quantidade"],
         "Data": item["Data"],
         "Peso Verde": item["Peso Verde"],
@@ -124,8 +124,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
         TextEditingController(text: plant['Espécie']);
     final TextEditingController quantityController =
         TextEditingController(text: plant['Quantidade'].toString());
-    final TextEditingController condicaoAreaController =
-        TextEditingController(text: plant['Condição da Área']);
+    final TextEditingController condicaoSoloController =
+        TextEditingController(text: plant['Condição do Solo']);
     final TextEditingController cultureController =
         TextEditingController(text: plant['Cultura']);
     final TextEditingController freshWeightController =
@@ -212,8 +212,8 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                     },
                   ),
                   _buildDropdownField(
-                    label: 'Condição da Área',
-                    controller: condicaoAreaController,
+                    label: 'Condição do Solo',
+                    controller: condicaoSoloController,
                     items: _conditionList
                         .map((e) => DropdownMenuItem(
                               value: e,
@@ -222,7 +222,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                         .toList(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'A condição da área é obrigatória';
+                        return 'A condição do solo é obrigatória';
                       }
                       return null;
                     },
@@ -297,7 +297,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                     "Pasto": pastureController.text,
                     "Espécie": speciesController.text,
                     "Quantidade": int.tryParse(quantityController.text) ?? 0,
-                    "Condição da Área": condicaoAreaController.text,
+                    "Condição do Solo": condicaoSoloController.text,
                     "Cultura": cultureController.text,
                     "Peso Verde": double.tryParse(freshWeightController.text) ?? 0.0,
                     "Peso Seco": double.tryParse(dryWeightController.text) ?? 0.0,
@@ -396,7 +396,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             ),
             _buildDropdownField(
               label: 'Condição do Solo',
-              controller: _filterCondicaoAreaController,
+              controller: _filterCondicaoSoloController,
               items: _conditionList
                   .map((e) => DropdownMenuItem(
                         value: e,
@@ -427,7 +427,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
                       _filterDateController.clear();
                       _filterPastureController.clear();
                       _filterSpeciesController.clear();
-                      _filterCondicaoAreaController.clear();
+                      _filterCondicaoSoloController.clear();
                       _filterCultureController.clear();
                       setState(() {});
                       _filterPlants();
@@ -645,7 +645,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       "pasture": hiveData["Pasto"],
       "species": hiveData["Espécie"],
       "quantity": hiveData["Quantidade"],
-      "condicaoArea": hiveData["Condição da Área"],
+      "condicaoSolo": hiveData["Condição do Solo"] ?? hiveData["Condição da Área"],
       "culture": hiveData["Cultura"],
       "fresh_weight": hiveData["Peso Verde"],
       "dry_weight": hiveData["Peso Seco"],
@@ -659,7 +659,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       "Pasto": firestoreData["pasture"],
       "Espécie": firestoreData["species"],
       "Quantidade": firestoreData["quantity"],
-      "Condição da Área": firestoreData["condicaoArea"],
+      "Condição do Solo": firestoreData["condicaoSolo"] ?? firestoreData["condicaoArea"],
       "Cultura": firestoreData["culture"],
       "Peso Verde": firestoreData["fresh_weight"],
       "Peso Seco": firestoreData["dry_weight"],
