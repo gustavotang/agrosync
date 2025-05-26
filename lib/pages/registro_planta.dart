@@ -8,6 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrosync/models/toast.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class RegistroPlanta extends StatefulWidget {
   final Plant planta;
@@ -441,19 +442,28 @@ class _RegistroState extends State<RegistroPlanta> {
     final double freshWeight = double.tryParse(_freshWeightController.text.trim()) ?? 0.0;
     final double dryWeight = double.tryParse(_dryWeightController.text.trim()) ?? 0.0;
 
+    Position? pos = await _getCurrentLocation();
+
+    if (pos == null) {
+      _showSnackbar('Não foi possível obter a localização. Ative o GPS e permita o acesso à localização.');
+      return;
+    }
+
     final plantData = {
       "date": date,
       "pasture": pasture,
       "species": species,
       "quantity": quantity,
-      "condition": condition,
+      "condicaoSolo": condition,
       "culture": culture,
       "fresh_weight": freshWeight,
       "dry_weight": dryWeight,
+      'latitude': pos.latitude,
+      'longitude': pos.longitude,
     };
 
-    await _plantBox.add(plantData);
-    await FirebaseFirestore.instance.collection('plants').add(plantData);
+    final docRef = await FirebaseFirestore.instance.collection('plants').add(plantData);
+    await _plantBox.put(docRef.id, plantData);
 
     _showSnackbar('Planta salva com sucesso!');
   }
@@ -531,5 +541,24 @@ class _RegistroState extends State<RegistroPlanta> {
     }
 
     return null;
+  }
+
+  // Função para obter a localização atual
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return null;
+    }
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return null;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return null;
+    }
+    return await Geolocator.getCurrentPosition();
   }
 }

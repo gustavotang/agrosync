@@ -249,7 +249,7 @@ Widget build(BuildContext context) {
                         }
                         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                           return Text(
-                            'Usuário',
+                            'Usuário não identificado',
                             style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -258,11 +258,14 @@ Widget build(BuildContext context) {
                           );
                         }
                         final userData = snapshot.data!;
+                        final nome = (userData['firstName'] ?? '').toString().trim();
+                        final cargo = (userData['role'] ?? '').toString().trim();
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              userData['firstName'] ?? 'Usuário',
+                              nome.isNotEmpty ? nome : 'Usuário não identificado',
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -270,7 +273,7 @@ Widget build(BuildContext context) {
                               ),
                             ),
                             Text(
-                              'Cargo: ${userData['role'] ?? 'Operador'}',
+                              'Cargo: ${cargo.isNotEmpty ? cargo : 'Não informado'}',
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 color: Colors.white,

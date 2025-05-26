@@ -331,6 +331,80 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
     );
   }
 
+  // Adicione este método na sua classe _ConsultaTabelaState:
+  void _showPlantDetails(Map<String, dynamic> plant) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF388E3C),
+          title: Text(
+            'Detalhes da Planta',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoRow('Espécie', plant['Espécie']),
+                _infoRow('Data', plant['Data']),
+                _infoRow('Pasto', plant['Pasto']),
+                _infoRow('Cultura', plant['Cultura']),
+                _infoRow('Condição do Solo', plant['Condição do Solo']),
+                _infoRow('Quantidade', plant['Quantidade']?.toString()),
+                _infoRow('Peso Verde', plant['Peso Verde']?.toString()),
+                _infoRow('Peso Seco', plant['Peso Seco']?.toString()),
+                _infoRow(
+                  'Localização',
+                  'Lat: ${plant['latitude']?.toString() ?? "-"}, Long: ${plant['longitude']?.toString() ?? "-"}',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper para exibir cada linha de informação
+  Widget _infoRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value ?? '-',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,9 +417,9 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color(0xFF388E3C), 
-        iconTheme: const IconThemeData(color: Colors.white), 
-        foregroundColor: Colors.white, 
+        backgroundColor: const Color(0xFF388E3C),
+        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -357,190 +431,201 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Campos de entrada
-            _buildTextField(
-              label: 'Data',
-              controller: _filterDateController,
-              hint: 'DD/MM/AAAA',
-              keyboardType: TextInputType.datetime,
-              validator: (value) => null,
-              inputFormatters: [dateMask], // <-- Adicione esta linha
-            ),
-            _buildDropdownField(
-              label: 'Pasto',
-              controller: _filterPastureController,
-              items: List.generate(4, (index) {
-                final value = (index + 1).toString();
-                return DropdownMenuItem(
-                  value: value,
-                  child: Text('Pasto $value'),
-                );
-              }),
-              validator: (value) => null,
-            ),
-            _buildDropdownField(
-              label: 'Nome da espécie',
-              controller: _filterSpeciesController,
-              items: _speciesList
-                  .map((e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ))
-                  .toList(),
-              validator: (value) => null,
-            ),
-            _buildDropdownField(
-              label: 'Condição do Solo',
-              controller: _filterCondicaoSoloController,
-              items: _conditionList
-                  .map((e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ))
-                  .toList(),
-              validator: (value) => null,
-            ),
-            _buildDropdownField(
-              label: 'Cultura',
-              controller: _filterCultureController,
-              items: _cultureList
-                  .map((e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ))
-                  .toList(),
-              validator: (value) => null,
-            ),
-            const SizedBox(height: 16),
-
-            // Botões
-            Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _filterDateController.clear();
-                      _filterPastureController.clear();
-                      _filterSpeciesController.clear();
-                      _filterCondicaoSoloController.clear();
-                      _filterCultureController.clear();
-                      setState(() {});
-                      _filterPlants();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                // Campos de entrada
+                _buildTextField(
+                  label: 'Data',
+                  controller: _filterDateController,
+                  hint: 'DD/MM/AAAA',
+                  keyboardType: TextInputType.datetime,
+                  validator: (value) => null,
+                  inputFormatters: [dateMask],
+                ),
+                _buildDropdownField(
+                  label: 'Pasto',
+                  controller: _filterPastureController,
+                  items: List.generate(4, (index) {
+                    final value = (index + 1).toString();
+                    return DropdownMenuItem(
+                      value: value,
+                      child: Text('Pasto $value'),
+                    );
+                  }),
+                  validator: (value) => null,
+                ),
+                _buildDropdownField(
+                  label: 'Nome da espécie',
+                  controller: _filterSpeciesController,
+                  items: _speciesList
+                      .map((e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e),
+                          ))
+                      .toList(),
+                  validator: (value) => null,
+                ),
+                _buildDropdownField(
+                  label: 'Condição do Solo',
+                  controller: _filterCondicaoSoloController,
+                  items: _conditionList
+                      .map((e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e),
+                          ))
+                      .toList(),
+                  validator: (value) => null,
+                ),
+                _buildDropdownField(
+                  label: 'Cultura',
+                  controller: _filterCultureController,
+                  items: _cultureList
+                      .map((e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e),
+                          ))
+                      .toList(),
+                  validator: (value) => null,
+                ),
+                const SizedBox(height: 16),
+
+                // Botões
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _filterDateController.clear();
+                          _filterPastureController.clear();
+                          _filterSpeciesController.clear();
+                          _filterCondicaoSoloController.clear();
+                          _filterCultureController.clear();
+                          setState(() {});
+                          _filterPlants();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('Limpar filtros'),
+                      ),
                     ),
-                    child: const Text('Limpar filtros'),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _filterPlants();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('Procurar'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Título da lista
+                const Text(
+                  'Resultado',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // Texto branco
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _filterPlants();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                const SizedBox(height: 8),
+
+                // Caixa de resultados maior e com scroll
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  color: Colors.white,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _filteredPlants.length,
+                      itemBuilder: (context, index) {
+                        final plant = _filteredPlants[index];
+                        final species = plant['Espécie'] ?? "Espécie não disponível";
+                        final date = plant['Data'] ?? "Data não disponível";
+
+                        return ListTile(
+                          leading: const Icon(Icons.grass, color: Colors.black),
+                          title: Text(
+                            species,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          subtitle: Text(
+                            date,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          onTap: () {
+                            _showPlantDetails(plant);
+                          },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.black),
+                                onPressed: () {
+                                  _editItem(index);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  final plant = _filteredPlants[index];
+                                  final id = plant["ID"];
+                                  print("Tentando deletar planta com ID: $id");
+
+                                  // Remove do Hive
+                                  await _plantBox.delete(id);
+
+                                  // Remove do Firestore
+                                  try {
+                                    await FirebaseFirestore.instance.collection('plants').doc(id).delete();
+                                    print("Deletado do Firestore: $id");
+                                  } catch (e) {
+                                    print("Erro ao deletar do Firestore: $e");
+                                    _showSnackbar("Erro ao deletar do Firestore: $e");
+                                  }
+
+                                  // Remove das listas
+                                  setState(() {
+                                    _plants.removeWhere((p) => p["ID"] == id);
+                                    _filteredPlants.removeWhere((p) => p["ID"] == id);
+                                  });
+                                  _showSnackbar("Planta removida com sucesso!");
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    child: const Text('Procurar'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-
-            // Título da lista
-            const Text(
-              'Resultado',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white, // Texto branco
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Lista de plantas
-            Expanded(
-              child: Container(
-                color: Colors.white, // Fundo branco para a lista
-                child: ListView.builder(
-                  itemCount: _filteredPlants.length,
-                  itemBuilder: (context, index) {
-                    final plant = _filteredPlants[index];
-                    final species = plant['Espécie'] ?? "Espécie não disponível";
-                    final date = plant['Data'] ?? "Data não disponível";
-
-                    return ListTile(
-                      leading: const Icon(Icons.grass, color: Colors.black),
-                      title: Text(
-                        species,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      subtitle: Text(
-                        date,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.black),
-                            onPressed: () {
-                              _editItem(index);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () async {
-                              final plant = _filteredPlants[index];
-                              final id = plant["ID"];
-                              print("Tentando deletar planta com ID: $id");
-
-                              // Remove do Hive
-                              await _plantBox.delete(id);
-
-                              // Remove do Firestore
-                              try {
-                                await FirebaseFirestore.instance.collection('plants').doc(id).delete();
-                                print("Deletado do Firestore: $id");
-                              } catch (e) {
-                                print("Erro ao deletar do Firestore: $e");
-                                _showSnackbar("Erro ao deletar do Firestore: $e");
-                              }
-
-                              // Remove das listas
-                              setState(() {
-                                _plants.removeWhere((p) => p["ID"] == id);
-                                _filteredPlants.removeWhere((p) => p["ID"] == id);
-                              });
-                              _showSnackbar("Planta removida com sucesso!");
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -645,7 +730,7 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       "pasture": hiveData["Pasto"],
       "species": hiveData["Espécie"],
       "quantity": hiveData["Quantidade"],
-      "condicaoSolo": hiveData["Condição do Solo"] ?? hiveData["Condição da Área"],
+      "condicaoSolo": hiveData["Condição do Solo"],
       "culture": hiveData["Cultura"],
       "fresh_weight": hiveData["Peso Verde"],
       "dry_weight": hiveData["Peso Seco"],
@@ -659,10 +744,12 @@ class _ConsultaTabelaState extends State<ConsultaTabela> {
       "Pasto": firestoreData["pasture"],
       "Espécie": firestoreData["species"],
       "Quantidade": firestoreData["quantity"],
-      "Condição do Solo": firestoreData["condicaoSolo"] ?? firestoreData["condicaoArea"],
+      "Condição do Solo": firestoreData["condicaoSolo"],
       "Cultura": firestoreData["culture"],
       "Peso Verde": firestoreData["fresh_weight"],
       "Peso Seco": firestoreData["dry_weight"],
+      "latitude": firestoreData["latitude"],   
+      "longitude": firestoreData["longitude"], 
     };
   }
 
