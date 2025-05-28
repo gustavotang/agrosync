@@ -11,6 +11,9 @@ import 'creditos.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'custom_chart_page.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -214,6 +217,35 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Função para gerar PDF das plantas
+  Future<void> exportPlantsToPDF(BuildContext context, List<Map<String, dynamic>> plants) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            children: [
+              pw.Text('Relatório de Plantas', style: pw.TextStyle(fontSize: 24)),
+              pw.SizedBox(height: 16),
+              pw.Table.fromTextArray(
+                headers: ['Espécie', 'Pasto', 'Cultura', 'Data'],
+                data: plants.map((p) => [
+                  p['Espécie'] ?? '',
+                  p['Pasto'] ?? '',
+                  p['Cultura'] ?? '',
+                  p['Data']?.toString() ?? '',
+                ]).toList(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
+
   @override
 Widget build(BuildContext context) {
   return Scaffold(
@@ -395,6 +427,35 @@ Widget build(BuildContext context) {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AdicionarCampoPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _buildServiceButton(
+                  icon: Icons.picture_as_pdf,
+                  label: 'Exportar PDF',
+                  onTap: () async {
+                    final snapshot = await _firestore.collection('plants').get();
+                    final List<Map<String, dynamic>> plants = snapshot.docs.map((doc) {
+                      return {
+                        "Espécie": doc["species"] ?? "",
+                        "Pasto": doc["pasture"] ?? "",
+                        "Cultura": doc["culture"] ?? "",
+                        "Data": doc["date"] ?? "",
+                      };
+                    }).toList();
+                    await exportPlantsToPDF(context, plants);
+                  },
+                ),
+                _buildServiceButton(
+                  icon: Icons.bar_chart,
+                  label: 'Gráfico Personalizado',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CustomChartPage(firestore: _firestore),
                       ),
                     );
                   },
