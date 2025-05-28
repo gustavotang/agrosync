@@ -55,27 +55,30 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 40),
-            _buildLogo(),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _emailController, label: 'Email', obscureText: false),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _passwordController, label: 'Senha', obscureText: true),
-            const SizedBox(height: 40),
-            _buildElevatedButton(label: 'Login', onPressed: () => _signIn(), isPrimary: true),
-            const SizedBox(height: 20),
-            _buildElevatedButton(label: 'Cadastrar-se', onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
-            }),
-            const SizedBox(height: 20),
-            _buildSponsors(),
-            const SizedBox(height: 100),
-          ],
+      resizeToAvoidBottomInset: true, // Permite que o conteúdo suba com o teclado
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              _buildLogo(),
+              const SizedBox(height: 20),
+              _buildTextField(controller: _emailController, label: 'Email', obscureText: false),
+              const SizedBox(height: 20),
+              _buildTextField(controller: _passwordController, label: 'Senha', obscureText: true),
+              const SizedBox(height: 40),
+              _buildElevatedButton(label: 'Login', onPressed: () => _signIn(), isPrimary: true),
+              const SizedBox(height: 20),
+              _buildElevatedButton(label: 'Cadastrar-se', onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
+              }),
+              const SizedBox(height: 20),
+              _buildSponsors(),
+              const SizedBox(height: 100),
+            ],
+          ),
         ),
       ),
     );
