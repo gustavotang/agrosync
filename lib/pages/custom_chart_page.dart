@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+
 
 class CustomChartPage extends StatefulWidget {
   final FirebaseFirestore firestore;
@@ -142,7 +142,7 @@ class _CustomChartPageState extends State<CustomChartPage> {
           },
         ),
       );
-      await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+     
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao exportar gráfico: $e')),

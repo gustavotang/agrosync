@@ -12,13 +12,20 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'custom_chart_page.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
 
   final _firestore = FirebaseFirestore.instance;
+  
+  final GlobalKey chartKey = GlobalKey();
   
   late Box<Map<String, dynamic>> _plantBox;
 
@@ -219,32 +226,49 @@ class HomePage extends StatelessWidget {
 
   // Função para gerar PDF das plantas
   Future<void> exportPlantsToPDF(BuildContext context, List<Map<String, dynamic>> plants) async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
-            children: [
-              pw.Text('Relatório de Plantas', style: pw.TextStyle(fontSize: 24)),
-              pw.SizedBox(height: 16),
-              pw.Table.fromTextArray(
-                headers: ['Espécie', 'Pasto', 'Cultura', 'Data'],
-                data: plants.map((p) => [
-                  p['Espécie'] ?? '',
-                  p['Pasto'] ?? '',
-                  p['Cultura'] ?? '',
-                  p['Data']?.toString() ?? '',
-                ]).toList(),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  // Captura o gráfico como imagem
+  Uint8List? chartImageBytes;
+  try {
+    RenderRepaintBoundary boundary = chartKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    chartImageBytes = byteData?.buffer.asUint8List();
+  } catch (e) {
+    chartImageBytes = null;
   }
+
+  final pdf = pw.Document();
+
+  pdf.addPage(
+    pw.MultiPage(
+      build: (pw.Context context) => [
+        pw.Text('Relatório Completo de Plantas', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        pw.Text('Data de geração: ${DateTime.now().toString().substring(0, 16)}'),
+        pw.SizedBox(height: 16),
+        if (chartImageBytes != null) ...[
+          pw.Text('Gráfico: Plantas registradas por pasto', style: pw.TextStyle(fontSize: 18)),
+          pw.SizedBox(height: 8),
+          pw.Image(pw.MemoryImage(chartImageBytes), height: 200),
+          pw.SizedBox(height: 16),
+        ],
+        pw.Text('Lista completa de plantas:', style: pw.TextStyle(fontSize: 18)),
+        pw.SizedBox(height: 8),
+        pw.Table.fromTextArray(
+          headers: ['Espécie', 'Pasto', 'Cultura', 'Data'],
+          data: plants.map((p) => [
+            p['Espécie'] ?? '',
+            p['Pasto'] ?? '',
+            p['Cultura'] ?? '',
+            p['Data']?.toString() ?? '',
+          ]).toList(),
+        ),
+      ],
+    ),
+  );
+
+  
+}
 
   @override
 Widget build(BuildContext context) {
@@ -368,7 +392,7 @@ Widget build(BuildContext context) {
                   label: 'Registrar Planta',
                   onTap: () {
                     Plant newPlant = Plant(
-                      species: "capim teste", // Alterado de "name" para "species"
+                      species: "capim teste",
                       date: DateTime.now(),
                       pasture: "teste",
                       culture: "teste",
@@ -408,31 +432,6 @@ Widget build(BuildContext context) {
                   },
                 ),
                 _buildServiceButton(
-                  icon: Icons.person,
-                  label: 'Creditos',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreditosPage(),
-                      ),
-                    );
-                  },
-                ),
-                _buildServiceButton(
-                  icon: Icons.add_location_alt,
-                  label: 'Adicionar Campo',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdicionarCampoPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                _buildServiceButton(
                   icon: Icons.picture_as_pdf,
                   label: 'Exportar PDF',
                   onTap: () async {
@@ -456,6 +455,31 @@ Widget build(BuildContext context) {
                       context,
                       MaterialPageRoute(
                         builder: (context) => CustomChartPage(firestore: _firestore),
+                      ),
+                    );
+                  },
+                ),
+                // Mova estes dois para o final:
+                _buildServiceButton(
+                  icon: Icons.person,
+                  label: 'Creditos',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreditosPage(),
+                      ),
+                    );
+                  },
+                ),
+                _buildServiceButton(
+                  icon: Icons.add_location_alt,
+                  label: 'Adicionar Campo',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdicionarCampoPage(),
                       ),
                     );
                   },
