@@ -18,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isSigning = false;
+  bool _showPassword = false; // Adicione esta linha
   final FirebaseAuthService _auth = FirebaseAuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   TextEditingController _emailController = TextEditingController();
@@ -67,7 +68,21 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               _buildTextField(controller: _emailController, label: 'Email', obscureText: false),
               const SizedBox(height: 20),
-              _buildTextField(controller: _passwordController, label: 'Senha', obscureText: true),
+              _buildTextField(
+                controller: _passwordController,
+                label: 'Senha',
+                obscureText: !_showPassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _showPassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showPassword = !_showPassword;
+                    });
+                  },
+                ),
+              ),
               const SizedBox(height: 40),
               _buildElevatedButton(label: 'Login', onPressed: () => _signIn(), isPrimary: true),
               const SizedBox(height: 20),
@@ -100,10 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 }
 
-Widget _buildSponsors() {
+  Widget _buildSponsors() {
   return SizedBox(
     height: 100,
-    child: Column(
+    child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Image.asset(
@@ -116,12 +131,27 @@ Widget _buildSponsors() {
           height: 50, 
           fit: BoxFit.contain,
         ),
+        Image.asset(
+          'assets/images/fapesc.png',
+          height: 50, 
+          fit: BoxFit.contain,
+        ),
+        Image.asset(
+          'assets/images/cnpq.png',
+          height: 50, 
+          fit: BoxFit.contain,
+        ),
       ],
     ),
   );
 }
 
-  Widget _buildTextField({required TextEditingController controller, required String label, required bool obscureText}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscureText,
+    Widget? suffixIcon, // Adicione este parâmetro opcional
+  }) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -130,6 +160,7 @@ Widget _buildSponsors() {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        suffixIcon: suffixIcon, // Adicione esta linha
       ),
       obscureText: obscureText,
     );

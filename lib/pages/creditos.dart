@@ -71,18 +71,28 @@ class CreditosPage extends StatelessWidget {
                 color: const Color(0xFF4B8B3B),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
+            const SizedBox(height: 50),
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/embrapa.png', // Substitua pelo caminho correto do logo da Embrapa
-                  height: 50,
+                  'assets/images/embrapa.png', 
+                  height: 100,
                 ),
                 const SizedBox(width: 16),
                 Image.asset(
-                  'assets/images/univali.png', // Substitua pelo caminho correto do logo da Univali
-                  height: 50,
+                  'assets/images/univali.png', 
+                  height: 100,
+                ),
+                Image.asset(
+                'assets/images/fapesc.png',
+                height: 100, 
+                fit: BoxFit.contain,
+                ),
+                Image.asset(
+                  'assets/images/cnpq.png',
+                  height: 100, 
+                  fit: BoxFit.contain,
                 ),
               ],
             ),
