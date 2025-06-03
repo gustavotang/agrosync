@@ -37,8 +37,8 @@ class _RegistroState extends State<RegistroPlanta> {
 
   var _plantBox = Hive.box('plant_box');
 
-  // Lista de espécies sem duplicidade e formatada
-  final List<String> _speciesList = [
+  // Listas fixas originais
+  final List<String> _fixedSpeciesList = [
     "Mentrasto",
     "Caruru",
     "Picão",
@@ -97,11 +97,8 @@ class _RegistroState extends State<RegistroPlanta> {
     "Botão de Ouro",
     "Quevra Preta",
     "Macela",
-  ].toList()
-    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-
-  // Lista de culturas sem duplicidade e formatada
-  final List<String> _cultureList = [
+  ];
+  final List<String> _fixedCultureList = [
     "Soja",
     "Milho",
     "Pasto/Soja",
@@ -112,13 +109,55 @@ class _RegistroState extends State<RegistroPlanta> {
     "Sorgo",
     "Milho/Pasto",
     "Pasto/Pasto",
-  ].toList()
-    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  ];
+  final List<String> _fixedConditionList = [
+    'Entre-safra',
+    'Na colheita',
+    'Na lavoura',
+    'Pré-dessecação',
+  ];
+  final List<int> _fixedPastosList = [1, 2, 3, 4]; // Agora é uma lista de int
+
+  // Listas finais (fixas + Firestore)
+  List<String> _speciesList = [];
+  List<String> _cultureList = [];
+  List<String> _conditionList = [];
+  List<int> _pastosList = []; // Lista final de int
 
   @override
   void initState() {
     super.initState();
     _dateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    _fetchDropdownOptions();
+  }
+
+  Future<void> _fetchDropdownOptions() async {
+    _speciesList = await _getOptionsFromCollection('especies', _fixedSpeciesList);
+    _cultureList = await _getOptionsFromCollection('culturas', _fixedCultureList);
+    _conditionList = await _getOptionsFromCollection('condicoes', _fixedConditionList);
+    _pastosList = await _getPastosOptions();
+    setState(() {});
+  }
+
+  Future<List<int>> _getPastosOptions() async {
+    final snapshot = await FirebaseFirestore.instance.collection('pastos').get();
+    final firestoreList = snapshot.docs
+        .map((doc) => int.tryParse(doc['nome'].toString().replaceAll(RegExp(r'[^0-9]'), '')))
+        .where((v) => v != null)
+        .cast<int>()
+        .toList();
+    final all = {..._fixedPastosList, ...firestoreList}.toList();
+    all.sort();
+    return all;
+  }
+
+  Future<List<String>> _getOptionsFromCollection(String collection, List<String> fixedList) async {
+    final snapshot = await FirebaseFirestore.instance.collection(collection).get();
+    final firestoreList = snapshot.docs.map((doc) => doc['nome'] as String).toList();
+    // Junta e remove duplicatas
+    final all = {...fixedList, ...firestoreList}.toList();
+    all.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return all;
   }
 
   @override
@@ -143,7 +182,7 @@ class _RegistroState extends State<RegistroPlanta> {
                 validator: _isEmptyValidator,
                 maskFormatter: dateMask,
               ),
-              // Troca o campo de texto de Pasto por um DropdownButtonFormField
+              // Dropdown para Pasto (numérico, mas exibindo "Pasto X")
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(
@@ -158,18 +197,17 @@ class _RegistroState extends State<RegistroPlanta> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _pastureController.text.isNotEmpty ? _pastureController.text : null,
-                      items: List.generate(4, (index) {
-                        final value = (index + 1).toString();
-                        return DropdownMenuItem(
-                          value: value,
-                          child: Text('Pasto $value'),
-                        );
-                      }),
+                    DropdownButtonFormField<int>(
+                      value: int.tryParse(_pastureController.text),
+                      items: _pastosList
+                          .map((e) => DropdownMenuItem(
+                                value: e,
+                                child: Text('Pasto $e'),
+                              ))
+                          .toList(),
                       onChanged: (value) {
                         setState(() {
-                          _pastureController.text = value ?? '';
+                          _pastureController.text = value?.toString() ?? '';
                         });
                       },
                       decoration: InputDecoration(
@@ -182,7 +220,7 @@ class _RegistroState extends State<RegistroPlanta> {
                         hintText: 'Selecione o pasto',
                         hintStyle: const TextStyle(color: Colors.black54),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'Selecione o pasto.' : null,
+                      validator: (value) => value == null ? 'Selecione o pasto.' : null,
                     ),
                   ],
                 ),
@@ -255,12 +293,12 @@ class _RegistroState extends State<RegistroPlanta> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: _conditionController.text.isNotEmpty ? _conditionController.text : null,
-                      items: const [
-                        DropdownMenuItem(value: 'Entre-safra', child: Text('Entre-safra')),
-                        DropdownMenuItem(value: 'Na colheita', child: Text('Na colheita')),
-                        DropdownMenuItem(value: 'Na lavoura', child: Text('Na lavoura')),
-                        DropdownMenuItem(value: 'Pré-dessecação', child: Text('Pré-dessecação')),
-                      ],
+                      items: _conditionList
+                          .map((e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(e),
+                              ))
+                          .toList(),
                       onChanged: (value) {
                         setState(() {
                           _conditionController.text = value ?? '';
