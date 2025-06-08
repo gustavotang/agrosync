@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.agrosync"
+    namespace = "br.com.tgx.agrosync"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,18 +19,30 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.agrosync"
+        applicationId = "br.com.tgx.agrosync"
         minSdkVersion 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            storeFile file("C:/Users/gusta/workspace/agrosync/android/app/release-key.jks") 
+            storePassword "tgx4878"
+            keyAlias "release"
+            keyPassword "tgx4878"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // signingConfig = signingConfigs.debug
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.agrosync
+package br.com.tgx.agrosync
 
 import io.flutter.embedding.android.FlutterActivity
 
