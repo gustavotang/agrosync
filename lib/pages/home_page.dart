@@ -255,19 +255,48 @@ class HomePage extends StatelessWidget {
         pw.Text('Lista completa de plantas:', style: pw.TextStyle(fontSize: 18)),
         pw.SizedBox(height: 8),
         pw.Table.fromTextArray(
-          headers: ['Espécie', 'Pasto', 'Cultura', 'Data'],
+          headers: [
+            'Espécie',
+            'Pasto',
+            'Cultura',
+            'Data',
+            'Condição',
+            'Peso Fresco',
+            'Peso Seco',
+            'Quantidade',
+            'Latitude',
+            'Longitude',
+          ],
           data: plants.map((p) => [
-            p['Espécie'] ?? '',
-            p['Pasto'] ?? '',
-            p['Cultura'] ?? '',
-            p['Data']?.toString() ?? '',
+            p['Espécie'],
+            p['Pasto'],
+            p['Cultura'],
+            p['Data'],
+            p['Condição'],
+            p['Peso Fresco'],
+            p['Peso Seco'],
+            p['Quantidade'],
+            p['Latitude'],
+            p['Longitude'],
           ]).toList(),
         ),
       ],
     ),
   );
 
-  
+  // Salvar o PDF em arquivo temporário
+  final bytes = await pdf.save();
+  final file = File('/storage/emulated/0/Download/relatorio_plantas.pdf');
+  await file.writeAsBytes(bytes);
+
+  // Mostra um SnackBar com o caminho do arquivo
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('PDF salvo em: ${file.path}')),
+    );
+  }
+
+
 }
 
   @override
@@ -437,11 +466,18 @@ Widget build(BuildContext context) {
                   onTap: () async {
                     final snapshot = await _firestore.collection('plants').get();
                     final List<Map<String, dynamic>> plants = snapshot.docs.map((doc) {
+                      final data = doc.data();
                       return {
-                        "Espécie": doc["species"] ?? "",
-                        "Pasto": doc["pasture"] ?? "",
-                        "Cultura": doc["culture"] ?? "",
-                        "Data": doc["date"] ?? "",
+                        "Espécie": data["species"] ?? "",
+                        "Pasto": data["pasture"] ?? "",
+                        "Cultura": data["culture"] ?? "",
+                        "Data": data["date"] ?? "",
+                        "Condição": data["condicaoArea"] ?? data["condicao"] ?? data["condicaoSolo"] ?? "",
+                        "Peso Fresco": data["fresh_weight"]?.toString() ?? data["pesoVerde"]?.toString() ?? "",
+                        "Peso Seco": data["dry_weight"]?.toString() ?? data["pesoSeco"]?.toString() ?? "",
+                        "Quantidade": data["quantity"]?.toString() ?? data["quantidade"]?.toString() ?? "",
+                        "Latitude": data["latitude"]?.toString() ?? "",
+                        "Longitude": data["longitude"]?.toString() ?? "",
                       };
                     }).toList();
                     await exportPlantsToPDF(context, plants);

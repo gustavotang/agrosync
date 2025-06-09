@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -5,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pdf/widgets.dart' as pw;
-
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CustomChartPage extends StatefulWidget {
   final FirebaseFirestore firestore;
@@ -103,14 +105,29 @@ class _CustomChartPageState extends State<CustomChartPage> {
     }
   }
 
-  Future<void> _exportChartToPDF() async {
+  Future<void> exportChartToPDF(BuildContext context, GlobalKey chartKey, {String fileName = 'grafico.pdf', String? titulo}) async {
     try {
-      RenderRepaintBoundary boundary =
-          chartKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      // Solicita permissão de armazenamento
+      if (Platform.isAndroid) {
+        var status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          status = await Permission.storage.request();
+          if (!status.isGranted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Permissão de armazenamento negada.')),
+            );
+            return;
+          }
+        }
+      }
+
+      // Captura o gráfico como imagem
+      RenderRepaintBoundary boundary = chartKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
+      // Cria o PDF
       final pdf = pw.Document();
       pdf.addPage(
         pw.Page(
@@ -118,31 +135,30 @@ class _CustomChartPageState extends State<CustomChartPage> {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Relatório de Gráfico', style: pw.TextStyle(fontSize: 24)),
+                if (titulo != null)
+                  pw.Text(titulo, style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 16),
                 pw.Image(pw.MemoryImage(pngBytes)),
-                pw.SizedBox(height: 16),
-                if (selectedField2 == null || selectedField2 == selectedField1)
-                  pw.Table.fromTextArray(
-                    headers: [selectedField1 ?? '', 'Quantidade'],
-                    data: chartData.entries.map((e) => [e.key, e.value.toString()]).toList(),
-                  )
-                else
-                  pw.Table.fromTextArray(
-                    headers: [selectedField1 ?? '', ...secondaryKeys],
-                    data: groupedData.entries.map((e) {
-                      return [
-                        e.key,
-                        ...secondaryKeys.map((k) => e.value[k]?.toString() ?? '0')
-                      ];
-                    }).toList(),
-                  ),
               ],
             );
           },
         ),
       );
-     
+
+      // Salva na pasta Downloads
+      final file = File('/storage/emulated/0/Download/$fileName');
+      final bytes = await pdf.save();
+      await file.writeAsBytes(bytes);
+
+      // SnackBar com ação para abrir
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF salvo em: ${file.path}')),
+        );
+      }
+
+      // Compartilhar automaticamente (opcional)
+      await Share.shareXFiles([XFile(file.path)], text: titulo ?? 'Gráfico em PDF');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao exportar gráfico: $e')),
@@ -335,7 +351,7 @@ class _CustomChartPageState extends State<CustomChartPage> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: _exportChartToPDF,
+                        onPressed: () => exportChartToPDF(context, chartKey),
                         icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                         label: const Text('Exportar Gráfico'),
                         style: ElevatedButton.styleFrom(
